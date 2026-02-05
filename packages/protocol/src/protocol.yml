@@ -1556,6 +1556,8 @@ Page:
     isClosed: boolean
     opener: Page?
     video: Artifact?
+    targetId: string?
+    sessionId: string?
 
   commands:
 
@@ -2149,6 +2151,7 @@ Frame:
     loadStates:
       type: array
       items: LifecycleEvent
+    frameId: string
 
   commands:
 

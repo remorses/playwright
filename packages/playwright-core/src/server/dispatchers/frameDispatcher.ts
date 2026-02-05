@@ -56,6 +56,7 @@ export class FrameDispatcher extends Dispatcher<Frame, channels.FrameChannel, Br
       name: frame.name(),
       parentFrame: FrameDispatcher.fromNullable(scope, frame.parentFrame()),
       loadStates: Array.from(frame._firedLifecycleEvents),
+      frameId: frame.frameId(),
     }, gcBucket);
     this._browserContextDispatcher = scope;
     this._frame = frame;

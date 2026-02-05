@@ -82,6 +82,8 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
       isClosed: page.isClosed(),
       opener: PageDispatcher.fromNullable(parentScope, page.opener()),
       video: page.video ? createVideoDispatcher(parentScope, page.video) : undefined,
+      targetId: page.targetId(),
+      sessionId: page.sessionId(),
     });
 
     this.adopt(mainFrame);

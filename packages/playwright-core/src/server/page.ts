@@ -313,6 +313,14 @@ export class Page extends SdkObject<PageEventMap> {
     return this._opener;
   }
 
+  targetId(): string | undefined {
+    return (this.delegate as any)._targetId;
+  }
+
+  sessionId(): string | undefined {
+    return (this.delegate as any)._mainFrameSession?._client?.sessionId?.();
+  }
+
   mainFrame(): frames.Frame {
     return this.frameManager.mainFrame();
   }

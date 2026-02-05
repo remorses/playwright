@@ -2044,6 +2044,8 @@ export type PageInitializer = {
   isClosed: boolean,
   opener?: PageChannel,
   video?: ArtifactChannel,
+  targetId?: string,
+  sessionId?: string,
 };
 export interface PageEventTarget {
   on(event: 'bindingCall', callback: (params: PageBindingCallEvent) => void): this;
@@ -2683,6 +2685,7 @@ export type FrameInitializer = {
   name: string,
   parentFrame?: FrameChannel,
   loadStates: LifecycleEvent[],
+  frameId: string,
 };
 export interface FrameEventTarget {
   on(event: 'loadstate', callback: (params: FrameLoadstateEvent) => void): this;

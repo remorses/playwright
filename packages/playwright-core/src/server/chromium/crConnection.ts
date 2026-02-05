@@ -148,6 +148,10 @@ export class CRSession extends SdkObject<Protocol.EventMap & ConnectionEventMap>
     return this.send(method, params).catch((error: ProtocolError) => debugLogger.log('error', error));
   }
 
+  sessionId(): string {
+    return this._sessionId;
+  }
+
   _onMessage(object: ProtocolResponse) {
     if (object.id && this._callbacks.has(object.id)) {
       const callback = this._callbacks.get(object.id)!;

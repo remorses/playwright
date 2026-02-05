@@ -4295,6 +4295,11 @@ export interface Page {
   }): Promise<Array<string>>;
 
   /**
+   * Returns the CDP session ID for this page. Only available when connected via CDP (Chromium).
+   */
+  sessionId(): string|undefined;
+
+  /**
    * **NOTE** Use locator-based
    * [locator.setChecked(checked[, options])](https://playwright.dev/docs/api/class-locator#locator-set-checked)
    * instead. Read more about [locators](https://playwright.dev/docs/locators).
@@ -4628,6 +4633,11 @@ export interface Page {
      */
     trial?: boolean;
   }): Promise<void>;
+
+  /**
+   * Returns the CDP target ID for this page. Only available when connected via CDP (Chromium).
+   */
+  targetId(): string|undefined;
 
   /**
    * **NOTE** Use locator-based
@@ -6872,6 +6882,11 @@ export interface Frame {
    *
    */
   frameElement(): Promise<ElementHandle>;
+
+  /**
+   * Returns the CDP frame ID for this frame. This is the same as targetId for main frames and OOPIFs.
+   */
+  frameId(): string;
 
   /**
    * When working with iframes, you can create a frame locator that will enter the iframe and allow selecting elements

@@ -920,6 +920,10 @@ export class Frame extends SdkObject<FrameEventMap> {
     return this._url;
   }
 
+  frameId(): string {
+    return this._id;
+  }
+
   origin(): string | undefined {
     if (!this._url.startsWith('http'))
       return;

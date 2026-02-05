@@ -2822,6 +2822,20 @@ and actions like click will never finish.
 
 Returns the opener for popup pages and `null` for others. If the opener has been closed already the returns `null`.
 
+## method: Page.targetId
+* since: v1.50
+* langs: js
+- returns: <[string]|[undefined]>
+
+Returns the CDP target ID for this page. Only available when connected via CDP (Chromium).
+
+## method: Page.sessionId
+* since: v1.50
+* langs: js
+- returns: <[string]|[undefined]>
+
+Returns the CDP session ID for this page. Only available when connected via CDP (Chromium).
+
 ## async method: Page.pause
 * since: v1.9
 

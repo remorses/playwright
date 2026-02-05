@@ -104,6 +104,8 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
   private _closeReason: string | undefined;
   _closeWasCalled: boolean = false;
   private _harRouters: HarRouter[] = [];
+  private _targetId: string | undefined;
+  private _sessionId: string | undefined;
 
   private _locatorHandlers = new Map<number, { locator: Locator, handler: (locator: Locator) => any, times: number | undefined }>();
 
@@ -134,6 +136,8 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
     this._closed = initializer.isClosed;
     this._opener = Page.fromNullable(initializer.opener);
     this._video = new Video(this, this._connection, initializer.video ? Artifact.from(initializer.video) : undefined);
+    this._targetId = initializer.targetId;
+    this._sessionId = initializer.sessionId;
 
     this._channel.on('bindingCall', ({ binding }) => this._onBinding(BindingCall.from(binding)));
     this._channel.on('close', () => this._onClose());
@@ -250,6 +254,14 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
     if (!this._opener || this._opener.isClosed())
       return null;
     return this._opener;
+  }
+
+  targetId(): string | undefined {
+    return this._targetId;
+  }
+
+  sessionId(): string | undefined {
+    return this._sessionId;
   }
 
   mainFrame(): Frame {

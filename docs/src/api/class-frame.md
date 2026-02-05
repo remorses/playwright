@@ -1370,6 +1370,13 @@ If the name is empty, returns the id attribute instead.
 This value is calculated once when the frame is created, and will not update if the attribute is changed later.
 :::
 
+## method: Frame.frameId
+* since: v1.50
+* langs: js
+- returns: <[string]>
+
+Returns the CDP frame ID for this frame. This is the same as targetId for main frames and OOPIFs.
+
 ## method: Frame.page
 * since: v1.8
 - returns: <[Page]>

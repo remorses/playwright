@@ -1166,6 +1166,8 @@ scheme.PageInitializer = tObject({
   isClosed: tBoolean,
   opener: tOptional(tChannel(['Page'])),
   video: tOptional(tChannel(['Artifact'])),
+  targetId: tOptional(tString),
+  sessionId: tOptional(tString),
 });
 scheme.PageBindingCallEvent = tObject({
   binding: tChannel(['BindingCall']),
@@ -1540,6 +1542,7 @@ scheme.FrameInitializer = tObject({
   name: tString,
   parentFrame: tOptional(tChannel(['Frame'])),
   loadStates: tArray(tType('LifecycleEvent')),
+  frameId: tString,
 });
 scheme.FrameLoadstateEvent = tObject({
   add: tOptional(tType('LifecycleEvent')),
