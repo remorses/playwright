@@ -38,6 +38,9 @@
     "zod": "^4.3.5",
     "zod-to-json-schema": "^3.25.1"
   },
+  "scripts": {
+    "prepublishOnly": "pnpm --filter root playwright:build"
+  },
   "exports": {
     ".": {
       "types": "./index.d.ts",
