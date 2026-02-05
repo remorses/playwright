@@ -14,8 +14,16 @@
  * limitations under the License.
  */
 
-export const yazl: typeof import('../bundles/zip/node_modules/@types/yazl') = require('./zipBundleImpl').yazl;
-export type { ZipFile } from '../bundles/zip/node_modules/@types/yazl';
-export const yauzl: typeof import('../bundles/zip/node_modules/@types/yauzl') = require('./zipBundleImpl').yauzl;
-export type { Entry, ZipFile as UnzipFile } from '../bundles/zip/node_modules/@types/yauzl';
-export const extract: typeof import('../bundles/zip/src/third_party/extract-zip.d.ts') = require('./zipBundleImpl').extract;
+// Direct imports instead of bundled - @xmorse/playwright-core fork
+import * as yazlLib from 'yazl';
+import * as yauzlLib from 'yauzl';
+
+export const yazl = yazlLib;
+export const yauzl = yauzlLib;
+
+export type { ZipFile } from 'yazl';
+export type { Entry, ZipFile as UnzipFile } from 'yauzl';
+
+// extract-zip is vendored in third_party
+const extractZip = require('./third_party/extract-zip');
+export const extract: (zipPath: string, opts: { dir: string; defaultDirMode?: number; defaultFileMode?: number; onEntry?: (entry: any, zipfile: any) => void }) => Promise<void> = extractZip;

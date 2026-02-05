@@ -14,41 +14,16 @@
  * limitations under the License.
  */
 
-// @ts-ignore
-import * as bundle from './mcpBundleImpl';
-
-const zodToJsonSchema: (schema: any, options?: any) => any = bundle.zodToJsonSchema;
-const Client: typeof import('@modelcontextprotocol/sdk/client/index.js').Client = bundle.Client;
-const Server: typeof import('@modelcontextprotocol/sdk/server/index.js').Server = bundle.Server;
-const SSEClientTransport: typeof import('@modelcontextprotocol/sdk/client/sse.js').SSEClientTransport = bundle.SSEClientTransport;
-const SSEServerTransport: typeof import('@modelcontextprotocol/sdk/server/sse.js').SSEServerTransport = bundle.SSEServerTransport;
-const StdioClientTransport: typeof import('@modelcontextprotocol/sdk/client/stdio.js').StdioClientTransport = bundle.StdioClientTransport;
-const StdioServerTransport: typeof import('@modelcontextprotocol/sdk/server/stdio.js').StdioServerTransport = bundle.StdioServerTransport;
-const StreamableHTTPServerTransport: typeof import('@modelcontextprotocol/sdk/server/streamableHttp.js').StreamableHTTPServerTransport = bundle.StreamableHTTPServerTransport;
-const StreamableHTTPClientTransport: typeof import('@modelcontextprotocol/sdk/client/streamableHttp.js').StreamableHTTPClientTransport = bundle.StreamableHTTPClientTransport;
-const CallToolRequestSchema: typeof import('@modelcontextprotocol/sdk/types.js').CallToolRequestSchema = bundle.CallToolRequestSchema;
-const ListRootsRequestSchema: typeof import('@modelcontextprotocol/sdk/types.js').ListRootsRequestSchema = bundle.ListRootsRequestSchema;
-const ProgressNotificationSchema: typeof import('@modelcontextprotocol/sdk/types.js').ProgressNotificationSchema = bundle.ProgressNotificationSchema;
-const ListToolsRequestSchema: typeof import('@modelcontextprotocol/sdk/types.js').ListToolsRequestSchema = bundle.ListToolsRequestSchema;
-const PingRequestSchema: typeof import('@modelcontextprotocol/sdk/types.js').PingRequestSchema = bundle.PingRequestSchema;
-const Loop: typeof import('@lowire/loop').Loop = bundle.Loop;
-const z: typeof import('zod') = bundle.z;
-
-export {
-  zodToJsonSchema,
-  Client,
-  Server,
-  SSEClientTransport,
-  SSEServerTransport,
-  StdioClientTransport,
-  StdioServerTransport,
-  StreamableHTTPClientTransport,
-  StreamableHTTPServerTransport,
-  CallToolRequestSchema,
-  ListRootsRequestSchema,
-  ListToolsRequestSchema,
-  PingRequestSchema,
-  ProgressNotificationSchema,
-  Loop,
-  z,
-};
+// Direct imports instead of bundled - @xmorse/playwright-core fork
+export { Client } from '@modelcontextprotocol/sdk/client/index.js';
+export { Server } from '@modelcontextprotocol/sdk/server/index.js';
+export { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+export { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+export { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+export { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+export { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+export { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+export { CallToolRequestSchema, ListRootsRequestSchema, ListToolsRequestSchema, PingRequestSchema, ProgressNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
+export { Loop } from '@lowire/loop';
+export * as z from 'zod';
+export { zodToJsonSchema } from 'zod-to-json-schema';
