@@ -9373,6 +9373,22 @@ export interface BrowserContext {
   newCDPSession(page: Page|Frame): Promise<CDPSession>;
 
   /**
+   * **NOTE** CDP sessions are only supported on Chromium-based browsers.
+   *
+   * Returns a CDPSession wrapping the page's (or frame's) already-existing internal
+   * CDP session. Unlike {@link newCDPSession} which creates a new Chrome debugging session
+   * via Target.attachToTarget, this reuses the session Playwright already holds internally.
+   *
+   * The returned session shares the same WebSocket transport. Detach is a no-op since
+   * Playwright's page lifecycle owns the underlying session.
+   *
+   * This is useful in relay/proxy environments where Target.attachToTarget is intercepted
+   * and cannot create real new sessions.
+   * @param page Target to get existing session for. Can be a `Page` or `Frame`.
+   */
+  getExistingCDPSession(page: Page|Frame): Promise<CDPSession>;
+
+  /**
    * Creates a new page in the browser context.
    */
   newPage(): Promise<Page>;

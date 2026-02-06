@@ -1613,6 +1613,7 @@ export interface BrowserContextChannel extends BrowserContextEventTarget, EventT
   disableRecorder(params?: BrowserContextDisableRecorderParams, progress?: Progress): Promise<BrowserContextDisableRecorderResult>;
   exposeConsoleApi(params?: BrowserContextExposeConsoleApiParams, progress?: Progress): Promise<BrowserContextExposeConsoleApiResult>;
   newCDPSession(params: BrowserContextNewCDPSessionParams, progress?: Progress): Promise<BrowserContextNewCDPSessionResult>;
+  getExistingCDPSession(params: BrowserContextGetExistingCDPSessionParams, progress?: Progress): Promise<BrowserContextGetExistingCDPSessionResult>;
   harStart(params: BrowserContextHarStartParams, progress?: Progress): Promise<BrowserContextHarStartResult>;
   harExport(params: BrowserContextHarExportParams, progress?: Progress): Promise<BrowserContextHarExportResult>;
   createTempFiles(params: BrowserContextCreateTempFilesParams, progress?: Progress): Promise<BrowserContextCreateTempFilesResult>;
@@ -1916,6 +1917,17 @@ export type BrowserContextNewCDPSessionOptions = {
   frame?: FrameChannel,
 };
 export type BrowserContextNewCDPSessionResult = {
+  session: CDPSessionChannel,
+};
+export type BrowserContextGetExistingCDPSessionParams = {
+  page?: PageChannel,
+  frame?: FrameChannel,
+};
+export type BrowserContextGetExistingCDPSessionOptions = {
+  page?: PageChannel,
+  frame?: FrameChannel,
+};
+export type BrowserContextGetExistingCDPSessionResult = {
   session: CDPSessionChannel,
 };
 export type BrowserContextHarStartParams = {

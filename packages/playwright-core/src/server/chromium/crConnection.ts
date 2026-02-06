@@ -105,11 +105,11 @@ export class CRConnection extends SdkObject {
 type SessionEventListener = (method: string, params?: Object) => void;
 
 export class CRSession extends SdkObject<Protocol.EventMap & ConnectionEventMap> {
-  private readonly _connection: CRConnection;
-  private _eventListener?: SessionEventListener;
+  readonly _connection: CRConnection;
+  _eventListener?: SessionEventListener;
   private readonly _callbacks = new Map<number, { resolve: (o: any) => void, reject: (e: ProtocolError) => void, error: ProtocolError }>();
   private readonly _sessionId: string;
-  private readonly _parentSession: CRSession | null;
+  readonly _parentSession: CRSession | null;
   private _crashed: boolean = false;
   private _closed = false;
 
@@ -205,8 +205,11 @@ export class CDPSession extends SdkObject {
     Closed: 'close',
   };
 
-  private _session: CRSession;
-  private _listeners: RegisteredListener[] = [];
+  protected _session: CRSession;
+  protected _listeners: RegisteredListener[] = [];
+  // When true, this CDPSession wraps an existing CRSession we don't own.
+  // Detach becomes a no-op and we don't dispose the session on close.
+  protected _borrowed = false;
 
   constructor(parentSession: CRSession, sessionId: string) {
     super(parentSession, 'cdp-session');
@@ -217,11 +220,36 @@ export class CDPSession extends SdkObject {
     })];
   }
 
+  /**
+   * Wraps an existing CRSession as a CDPSession without calling Target.attachToTarget
+   * or creating a child session. The CRSession is already attached and registered in
+   * the connection's session map — we just chain an event forwarder so CDP events flow
+   * through CDPSession.Events.Event (which CDPSessionDispatcher expects).
+   *
+   * The session is "borrowed": detach is a no-op because Playwright's page lifecycle
+   * owns it. This is used by getExistingCDPSession() to expose a page's internal CDP
+   * session over the same WebSocket, which is critical for the playwriter relay where
+   * Target.attachToTarget is intercepted and can't create real new sessions.
+   */
+  static fromExistingSession(existingSession: CRSession): CDPSession {
+    return CDPSession._createBorrowed(existingSession);
+  }
+
+  private static _createBorrowed(existingSession: CRSession): CDPSession {
+    // Bypass the regular constructor which calls createChildSession.
+    // We directly set up a CDPSession that delegates to the existing CRSession.
+    const instance = new CDPSessionBorrowed(existingSession);
+    return instance;
+  }
+
   async send(method: string, params?: any) {
     return await this._session.send(method as any, params);
   }
 
   async detach() {
+    if (this._borrowed) {
+      return;
+    }
     return await this._session.detach();
   }
 
@@ -232,7 +260,54 @@ export class CDPSession extends SdkObject {
 
   private _onClose() {
     eventsHelper.removeEventListeners(this._listeners);
-    this._session.dispose();
+    if (!this._borrowed) {
+      this._session.dispose();
+    }
     this.emit(CDPSession.Events.Closed);
   }
+}
+
+/**
+ * Internal subclass that wraps an already-attached CRSession. Its constructor
+ * passes a unique sentinel sessionId to CDPSession's super() so createChildSession
+ * doesn't collide with the real session, then immediately cleans up the temporary
+ * child and redirects to the existing CRSession.
+ */
+class CDPSessionBorrowed extends CDPSession {
+  constructor(existingSession: CRSession) {
+    // Create with a sentinel sessionId that won't collide with real sessions.
+    // The parent for the super call needs to be the existing session's parent,
+    // or the session itself if it's the root (parentSession is null).
+    const parentForSuper = existingSession._parentSession || existingSession;
+    const sentinelId = `__pw_borrowed_${existingSession.sessionId()}_${++CDPSessionBorrowed._counter}`;
+    super(parentForSuper, sentinelId);
+
+    // super() created a temporary child CRSession in the connection's _sessions map.
+    // Remove it so it doesn't interfere with message routing.
+    const tempSession = existingSession._connection._sessions.get(sentinelId);
+    if (tempSession) {
+      existingSession._connection._sessions.delete(sentinelId);
+    }
+
+    // Clear the listeners set up by super() for the sentinel sessionId
+    eventsHelper.removeEventListeners(this._listeners);
+    this._listeners = [];
+
+    // Point to the real existing session
+    this._session = existingSession;
+    this._borrowed = true;
+
+    // Chain our event forwarder onto the existing session's _eventListener.
+    // CRSession calls _eventListener(method, params) for every CDP event.
+    // We piggyback to emit CDPSession.Events.Event for the dispatcher.
+    const originalListener = existingSession._eventListener;
+    existingSession._eventListener = (method: string, params?: Object) => {
+      if (originalListener) {
+        originalListener(method, params);
+      }
+      this.emit(CDPSession.Events.Event, { method, params });
+    };
+  }
+
+  private static _counter = 0;
 }

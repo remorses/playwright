@@ -1,5 +1,14 @@
 # @xmorse/playwright-core
 
+## 1.59.2
+
+- Add `context.getExistingCDPSession(page)` API that reuses Playwright's internal CDP session instead of creating a new one via `Target.attachToTarget`
+- New `CDPSession.fromExistingSession()` static factory and `CDPSessionBorrowed` subclass for wrapping existing CRSessions without ownership
+- Borrowed sessions have no-op `detach()` since Playwright's page lifecycle owns the underlying session
+- Critical for relay/proxy environments (like playwriter) where `Target.attachToTarget` is intercepted and cannot create real new sessions
+- Added protocol schema, channel types, dispatcher, and client-side method
+- Added public TypeScript types with JSDoc documentation
+
 ## 1.59.1
 
 - Expose `page.targetId()` and `page.sessionId()` for CDP connections (Chromium)

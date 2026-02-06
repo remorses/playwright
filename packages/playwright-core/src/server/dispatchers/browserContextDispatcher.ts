@@ -359,6 +359,14 @@ export class BrowserContextDispatcher extends Dispatcher<BrowserContext, channel
     return { session: new CDPSessionDispatcher(this, await progress.race(crBrowserContext.newCDPSession((params.page ? params.page as PageDispatcher : params.frame as FrameDispatcher)._object))) };
   }
 
+  async getExistingCDPSession(params: channels.BrowserContextGetExistingCDPSessionParams, progress: Progress): Promise<channels.BrowserContextGetExistingCDPSessionResult> {
+    if (!this._object._browser.options.isChromium)
+      throw new Error(`CDP session is only available in Chromium`);
+    const crBrowserContext = this._object as CRBrowserContext;
+    const target = (params.page ? params.page as PageDispatcher : params.frame as FrameDispatcher)._object;
+    return { session: new CDPSessionDispatcher(this, crBrowserContext.getExistingCDPSession(target)) };
+  }
+
   async harStart(params: channels.BrowserContextHarStartParams, progress: Progress): Promise<channels.BrowserContextHarStartResult> {
     const harId = this._context.harStart(params.page ? (params.page as PageDispatcher)._object : null, params.options);
     return { harId };

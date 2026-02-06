@@ -1096,6 +1096,13 @@ scheme.BrowserContextNewCDPSessionParams = tObject({
 scheme.BrowserContextNewCDPSessionResult = tObject({
   session: tChannel(['CDPSession']),
 });
+scheme.BrowserContextGetExistingCDPSessionParams = tObject({
+  page: tOptional(tChannel(['Page'])),
+  frame: tOptional(tChannel(['Frame'])),
+});
+scheme.BrowserContextGetExistingCDPSessionResult = tObject({
+  session: tChannel(['CDPSession']),
+});
 scheme.BrowserContextHarStartParams = tObject({
   page: tOptional(tChannel(['Page'])),
   options: tType('RecordHarOptions'),

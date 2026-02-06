@@ -492,6 +492,13 @@ export class BrowserContext extends ChannelOwner<channels.BrowserContextChannel>
     return CDPSession.from(result.session);
   }
 
+  async getExistingCDPSession(page: Page | Frame): Promise<api.CDPSession> {
+    if (!(page instanceof Page) && !(page instanceof Frame))
+      throw new Error('page: expected Page or Frame');
+    const result = await this._channel.getExistingCDPSession(page instanceof Page ? { page: page._channel } : { frame: page._channel });
+    return CDPSession.from(result.session);
+  }
+
   _onClose() {
     this._closingStatus = 'closed';
     this._browser?._contexts.delete(this);

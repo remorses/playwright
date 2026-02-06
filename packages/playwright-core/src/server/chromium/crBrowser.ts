@@ -33,7 +33,8 @@ import { CRServiceWorker } from './crServiceWorker';
 import type { InitScript, Worker } from '../page';
 import type { ConnectionTransport } from '../transport';
 import type * as types from '../types';
-import type { CDPSession, CRSession } from './crConnection';
+import { CDPSession } from './crConnection';
+import type { CRSession } from './crConnection';
 import type { CRDevTools } from './crDevTools';
 import type { Protocol } from './protocol';
 import type { BrowserOptions } from '../browser';
@@ -612,5 +613,33 @@ export class CRBrowserContext extends BrowserContext<CREventsMap> {
 
     const rootSession = await this._browser._clientRootSession();
     return rootSession.attachToTarget(targetId);
+  }
+
+  /**
+   * Returns a CDPSession that wraps the page's (or frame's) already-existing internal
+   * CRSession. Unlike newCDPSession() which calls Target.attachToTarget to create a
+   * new Chrome debugging session, this reuses the session Playwright already holds.
+   *
+   * This is critical for environments like playwriter's relay server where
+   * Target.attachToTarget is intercepted and doesn't create real new sessions.
+   * The returned session shares the same WebSocket transport Playwright uses internally.
+   *
+   * The session is "borrowed" — detach() is a no-op since Playwright's page lifecycle
+   * owns the underlying CRSession.
+   */
+  getExistingCDPSession(page: Page | Frame): CDPSession {
+    let crSession: CRSession;
+    if (page instanceof Page) {
+      crSession = (page.delegate as CRPage)._mainFrameSession._client;
+    } else if (page instanceof Frame) {
+      const frameSession = (page._page.delegate as CRPage)._sessions.get(page._id);
+      if (!frameSession) {
+        throw new Error(`This frame does not have a separate CDP session, it is a part of the parent frame's session`);
+      }
+      crSession = frameSession._client;
+    } else {
+      throw new Error('page: expected Page or Frame');
+    }
+    return CDPSession.fromExistingSession(crSession);
   }
 }
