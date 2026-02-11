@@ -1,5 +1,10 @@
 # @xmorse/playwright-core
 
+## 1.59.3
+
+- Fix missing runtime dependencies for `lockfile.js`: add `graceful-fs`, `retry`, and `signal-exit` to package.json dependencies
+- Fixes "Cannot find module 'graceful-fs'" error on clean `npx playwriter` installs (GitHub #45)
+
 ## 1.59.2
 
 - Add `context.getExistingCDPSession(page)` API that reuses Playwright's internal CDP session instead of creating a new one via `Target.attachToTarget`
