@@ -1,5 +1,9 @@
 # @xmorse/playwright-core
 
+## 1.59.4
+
+- Stop forcing light mode on pages connected via `connectOverCDP`. The default `colorScheme` fallback in `page.emulatedMedia()` changed from `'light'` to `'no-override'`, so the browser's actual system color scheme is preserved instead of being overridden on every page init.
+
 ## 1.59.3
 
 - Fix missing runtime dependencies for `lockfile.js`: add `graceful-fs`, `retry`, and `signal-exit` to package.json dependencies

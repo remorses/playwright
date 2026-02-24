@@ -585,7 +585,10 @@ export class Page extends SdkObject<PageEventMap> {
     const contextOptions = this.browserContext._options;
     return {
       media: this._emulatedMedia.media || 'no-override',
-      colorScheme: this._emulatedMedia.colorScheme !== undefined ? this._emulatedMedia.colorScheme : contextOptions.colorScheme ?? 'light',
+      // Default to 'no-override' so connectOverCDP respects the user's system color scheme
+      // instead of forcing light mode on every page. Upstream playwright defaults to 'light'
+      // because it launches fresh isolated browsers, but our fork always connects to running browsers.
+      colorScheme: this._emulatedMedia.colorScheme !== undefined ? this._emulatedMedia.colorScheme : contextOptions.colorScheme ?? 'no-override',
       reducedMotion: this._emulatedMedia.reducedMotion !== undefined ? this._emulatedMedia.reducedMotion : contextOptions.reducedMotion ?? 'no-preference',
       forcedColors: this._emulatedMedia.forcedColors !== undefined ? this._emulatedMedia.forcedColors : contextOptions.forcedColors ?? 'none',
       contrast: this._emulatedMedia.contrast !== undefined ? this._emulatedMedia.contrast : contextOptions.contrast ?? 'no-preference',
