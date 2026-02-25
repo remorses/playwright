@@ -1904,6 +1904,16 @@ Page:
         snapshot: true
         pausesBeforeAction: true
 
+    setOnMouseAction:
+      title: Set mouse action callback
+      parameters:
+        enabled: boolean
+
+    mouseActionDone:
+      title: Acknowledge mouse action
+      parameters:
+        id: int
+
     touchscreenTap:
       title: Tap
       parameters:
@@ -2138,6 +2148,26 @@ Page:
     worker:
       parameters:
         worker: Worker
+
+    mouseActionRequest:
+      parameters:
+        id: int
+        type:
+          type: enum
+          literals:
+          - move
+          - down
+          - up
+          - wheel
+        x: float
+        y: float
+        button:
+          type: enum
+          literals:
+          - left
+          - right
+          - middle
+          - none
 
 
 

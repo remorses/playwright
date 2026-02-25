@@ -106,6 +106,8 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
   private _harRouters: HarRouter[] = [];
   private _targetId: string | undefined;
   private _sessionId: string | undefined;
+  // Playwriter: user-provided callback invoked before each mouse action.
+  private _onMouseActionCallback: ((event: MouseActionEvent) => Promise<void>) | null = null;
 
   private _locatorHandlers = new Map<number, { locator: Locator, handler: (locator: Locator) => any, times: number | undefined }>();
 
@@ -155,6 +157,19 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
     this._channel.on('viewportSizeChanged', ({ viewportSize }) => this._viewportSize = viewportSize);
     this._channel.on('webSocket', ({ webSocket }) => this.emit(Events.Page.WebSocket, WebSocket.from(webSocket)));
     this._channel.on('worker', ({ worker }) => this._onWorker(Worker.from(worker)));
+    // Playwriter: handle mouse action requests from server. The server awaits our ack
+    // before dispatching the raw CDP mouse event, giving the callback (e.g. ghost cursor
+    // animation) time to complete.
+    this._channel.on('mouseActionRequest', ({ id, type, x, y, button }) => {
+      const done = () => {
+        this._channel.mouseActionDone({ id }).catch(() => {});
+      };
+      if (this._onMouseActionCallback) {
+        this._onMouseActionCallback({ type, x, y, button }).then(done, done);
+      } else {
+        done();
+      }
+    });
 
     this.coverage = new Coverage(this._channel);
 
@@ -262,6 +277,15 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
 
   sessionId(): string | undefined {
     return this._sessionId;
+  }
+
+  set onMouseAction(callback: ((event: MouseActionEvent) => Promise<void>) | null) {
+    this._onMouseActionCallback = callback;
+    this._channel.setOnMouseAction({ enabled: callback !== null }).catch(() => {});
+  }
+
+  get onMouseAction(): ((event: MouseActionEvent) => Promise<void>) | null {
+    return this._onMouseActionCallback;
   }
 
   mainFrame(): Frame {
@@ -908,3 +932,11 @@ function trimUrl(param: any): string | undefined {
   if (isString(param))
     return `"${trimStringWithEllipsis(param, 50)}"`;
 }
+
+// Playwriter: event payload for the onMouseAction callback.
+export type MouseActionEvent = {
+  type: 'move' | 'down' | 'up' | 'wheel';
+  x: number;
+  y: number;
+  button: 'left' | 'right' | 'middle' | 'none';
+};

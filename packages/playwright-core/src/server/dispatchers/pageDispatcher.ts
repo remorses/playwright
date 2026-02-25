@@ -57,6 +57,10 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
   private _locatorHandlers = new Set<number>();
   private _jsCoverageActive = false;
   private _cssCoverageActive = false;
+  // Playwriter: pending mouse action ack promises. Server awaits these while
+  // the client runs its onMouseAction callback (e.g. ghost cursor animation).
+  private _mouseActionResolvers = new Map<number, () => void>();
+  private _mouseActionId = 0;
 
   static from(parentScope: BrowserContextDispatcher, page: Page): PageDispatcher {
     return PageDispatcher.fromNullable(parentScope, page)!;
@@ -99,6 +103,11 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
     };
 
     this.addObjectListener(Page.Events.Close, () => {
+      // Resolve any pending mouse action acks so the server doesn't hang
+      for (const resolve of this._mouseActionResolvers.values()) {
+        resolve();
+      }
+      this._mouseActionResolvers.clear();
       this._dispatchEvent('close');
       this._dispose();
     });
@@ -308,6 +317,40 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
 
   async mouseWheel(params: channels.PageMouseWheelParams, progress: Progress): Promise<void> {
     await this._page.mouse.wheel(progress, params.deltaX, params.deltaY);
+  }
+
+  async setOnMouseAction(params: channels.PageSetOnMouseActionParams): Promise<void> {
+    if (params.enabled) {
+      this._page._onMouseAction = async (event) => {
+        const id = ++this._mouseActionId;
+        const promise = new Promise<void>((resolve) => {
+          this._mouseActionResolvers.set(id, resolve);
+        });
+        this._dispatchEvent('mouseActionRequest', {
+          id,
+          type: event.type,
+          x: event.x,
+          y: event.y,
+          button: event.button,
+        });
+        await promise;
+      };
+    } else {
+      this._page._onMouseAction = null;
+      // Resolve any pending acks so nothing hangs
+      for (const resolve of this._mouseActionResolvers.values()) {
+        resolve();
+      }
+      this._mouseActionResolvers.clear();
+    }
+  }
+
+  async mouseActionDone(params: channels.PageMouseActionDoneParams): Promise<void> {
+    const resolve = this._mouseActionResolvers.get(params.id);
+    if (resolve) {
+      this._mouseActionResolvers.delete(params.id);
+      resolve();
+    }
   }
 
   async touchscreenTap(params: channels.PageTouchscreenTapParams, progress: Progress): Promise<void> {

@@ -1613,7 +1613,6 @@ export interface BrowserContextChannel extends BrowserContextEventTarget, EventT
   disableRecorder(params?: BrowserContextDisableRecorderParams, progress?: Progress): Promise<BrowserContextDisableRecorderResult>;
   exposeConsoleApi(params?: BrowserContextExposeConsoleApiParams, progress?: Progress): Promise<BrowserContextExposeConsoleApiResult>;
   newCDPSession(params: BrowserContextNewCDPSessionParams, progress?: Progress): Promise<BrowserContextNewCDPSessionResult>;
-  getExistingCDPSession(params: BrowserContextGetExistingCDPSessionParams, progress?: Progress): Promise<BrowserContextGetExistingCDPSessionResult>;
   harStart(params: BrowserContextHarStartParams, progress?: Progress): Promise<BrowserContextHarStartResult>;
   harExport(params: BrowserContextHarExportParams, progress?: Progress): Promise<BrowserContextHarExportResult>;
   createTempFiles(params: BrowserContextCreateTempFilesParams, progress?: Progress): Promise<BrowserContextCreateTempFilesResult>;
@@ -1919,17 +1918,6 @@ export type BrowserContextNewCDPSessionOptions = {
 export type BrowserContextNewCDPSessionResult = {
   session: CDPSessionChannel,
 };
-export type BrowserContextGetExistingCDPSessionParams = {
-  page?: PageChannel,
-  frame?: FrameChannel,
-};
-export type BrowserContextGetExistingCDPSessionOptions = {
-  page?: PageChannel,
-  frame?: FrameChannel,
-};
-export type BrowserContextGetExistingCDPSessionResult = {
-  session: CDPSessionChannel,
-};
 export type BrowserContextHarStartParams = {
   page?: PageChannel,
   options: RecordHarOptions,
@@ -2073,6 +2061,7 @@ export interface PageEventTarget {
   on(event: 'webSocketRoute', callback: (params: PageWebSocketRouteEvent) => void): this;
   on(event: 'webSocket', callback: (params: PageWebSocketEvent) => void): this;
   on(event: 'worker', callback: (params: PageWorkerEvent) => void): this;
+  on(event: 'mouseActionRequest', callback: (params: PageMouseActionRequestEvent) => void): this;
 }
 export interface PageChannel extends PageEventTarget, EventTargetChannel {
   _type_Page: boolean;
@@ -2104,6 +2093,8 @@ export interface PageChannel extends PageEventTarget, EventTargetChannel {
   mouseUp(params: PageMouseUpParams, progress?: Progress): Promise<PageMouseUpResult>;
   mouseClick(params: PageMouseClickParams, progress?: Progress): Promise<PageMouseClickResult>;
   mouseWheel(params: PageMouseWheelParams, progress?: Progress): Promise<PageMouseWheelResult>;
+  setOnMouseAction(params: PageSetOnMouseActionParams, progress?: Progress): Promise<PageSetOnMouseActionResult>;
+  mouseActionDone(params: PageMouseActionDoneParams, progress?: Progress): Promise<PageMouseActionDoneResult>;
   touchscreenTap(params: PageTouchscreenTapParams, progress?: Progress): Promise<PageTouchscreenTapResult>;
   pageErrors(params?: PagePageErrorsParams, progress?: Progress): Promise<PagePageErrorsResult>;
   pdf(params: PagePdfParams, progress?: Progress): Promise<PagePdfResult>;
@@ -2159,6 +2150,13 @@ export type PageWebSocketEvent = {
 };
 export type PageWorkerEvent = {
   worker: WorkerChannel,
+};
+export type PageMouseActionRequestEvent = {
+  id: number,
+  type: 'move' | 'down' | 'up' | 'wheel',
+  x: number,
+  y: number,
+  button: 'left' | 'right' | 'middle' | 'none',
 };
 export type PageAddInitScriptParams = {
   source: string,
@@ -2490,6 +2488,20 @@ export type PageMouseWheelOptions = {
 
 };
 export type PageMouseWheelResult = void;
+export type PageSetOnMouseActionParams = {
+  enabled: boolean,
+};
+export type PageSetOnMouseActionOptions = {
+
+};
+export type PageSetOnMouseActionResult = void;
+export type PageMouseActionDoneParams = {
+  id: number,
+};
+export type PageMouseActionDoneOptions = {
+
+};
+export type PageMouseActionDoneResult = void;
 export type PageTouchscreenTapParams = {
   x: number,
   y: number,
@@ -2689,6 +2701,7 @@ export interface PageEvents {
   'webSocketRoute': PageWebSocketRouteEvent;
   'webSocket': PageWebSocketEvent;
   'worker': PageWorkerEvent;
+  'mouseActionRequest': PageMouseActionRequestEvent;
 }
 
 // ----------- Frame -----------

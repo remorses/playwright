@@ -101,6 +101,14 @@ export interface PageDelegate {
 
 type EmulatedSize = { screen: types.Size, viewport: types.Size };
 
+// Playwriter: event payload for the onMouseAction callback.
+export type MouseActionEvent = {
+  type: 'move' | 'down' | 'up' | 'wheel';
+  x: number;
+  y: number;
+  button: 'left' | 'right' | 'middle' | 'none';
+};
+
 type EmulatedMedia = {
   media: types.MediaType;
   colorScheme: types.ColorScheme;
@@ -187,6 +195,9 @@ export class Page extends SdkObject<PageEventMap> {
 
   readonly screencast: Screencast;
   _closeReason: string | undefined;
+  // Playwriter: async callback invoked before each mouse action (move/down/up/wheel).
+  // Set from the client via setOnMouseAction. Server Mouse awaits this before raw dispatch.
+  _onMouseAction: ((event: MouseActionEvent) => Promise<void>) | null = null;
 
   constructor(delegate: PageDelegate, browserContext: BrowserContext) {
     super(browserContext, 'page');

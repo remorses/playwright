@@ -1096,13 +1096,6 @@ scheme.BrowserContextNewCDPSessionParams = tObject({
 scheme.BrowserContextNewCDPSessionResult = tObject({
   session: tChannel(['CDPSession']),
 });
-scheme.BrowserContextGetExistingCDPSessionParams = tObject({
-  page: tOptional(tChannel(['Page'])),
-  frame: tOptional(tChannel(['Frame'])),
-});
-scheme.BrowserContextGetExistingCDPSessionResult = tObject({
-  session: tChannel(['CDPSession']),
-});
 scheme.BrowserContextHarStartParams = tObject({
   page: tOptional(tChannel(['Page'])),
   options: tType('RecordHarOptions'),
@@ -1216,6 +1209,13 @@ scheme.PageWebSocketEvent = tObject({
 });
 scheme.PageWorkerEvent = tObject({
   worker: tChannel(['Worker']),
+});
+scheme.PageMouseActionRequestEvent = tObject({
+  id: tInt,
+  type: tEnum(['move', 'down', 'up', 'wheel']),
+  x: tFloat,
+  y: tFloat,
+  button: tEnum(['left', 'right', 'middle', 'none']),
 });
 scheme.PageAddInitScriptParams = tObject({
   source: tString,
@@ -1425,6 +1425,14 @@ scheme.PageMouseWheelParams = tObject({
   deltaY: tFloat,
 });
 scheme.PageMouseWheelResult = tOptional(tObject({}));
+scheme.PageSetOnMouseActionParams = tObject({
+  enabled: tBoolean,
+});
+scheme.PageSetOnMouseActionResult = tOptional(tObject({}));
+scheme.PageMouseActionDoneParams = tObject({
+  id: tInt,
+});
+scheme.PageMouseActionDoneResult = tOptional(tObject({}));
 scheme.PageTouchscreenTapParams = tObject({
   x: tFloat,
   y: tFloat,
