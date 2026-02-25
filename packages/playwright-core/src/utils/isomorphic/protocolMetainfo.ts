@@ -91,6 +91,7 @@ export const methodMetainfo = new Map<string, { internal?: boolean, title?: stri
   ['BrowserContext.disableRecorder', { internal: true, }],
   ['BrowserContext.exposeConsoleApi', { internal: true, }],
   ['BrowserContext.newCDPSession', { title: 'Create CDP session', group: 'configuration', }],
+  ['BrowserContext.getExistingCDPSession', { title: 'Get existing CDP session for a page or frame', }],
   ['BrowserContext.harStart', { internal: true, }],
   ['BrowserContext.harExport', { internal: true, }],
   ['BrowserContext.createTempFiles', { internal: true, }],

@@ -164,11 +164,17 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
       const done = () => {
         this._channel.mouseActionDone({ id }).catch(() => {});
       };
-      if (this._onMouseActionCallback) {
-        this._onMouseActionCallback({ type, x, y, button }).then(done, done);
-      } else {
+      const callback = this._onMouseActionCallback;
+      if (!callback) {
         done();
+        return;
       }
+      // Use Promise.resolve().then() to safely handle both sync throws and
+      // async rejections — ensures ack is always sent back to the server.
+      void Promise.resolve()
+        .then(() => { return callback({ type, x, y, button }); })
+        .catch(() => {})
+        .finally(done);
     });
 
     this.coverage = new Coverage(this._channel);

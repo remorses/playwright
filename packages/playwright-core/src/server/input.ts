@@ -231,6 +231,15 @@ export class Mouse {
         if (cc < clickCount)
           await progress.wait(delay);
       }
+    } else if (this._page._onMouseAction) {
+      // When mouse action callback is enabled, serialize move→down→up so the
+      // callback fires in correct order (e.g. ghost cursor animates to target
+      // before the click visual feedback).
+      await this.move(progress, x, y, { forClick: true, steps });
+      for (let cc = 1; cc <= clickCount; ++cc) {
+        await this.down(progress, { ...options, clickCount: cc });
+        await this.up(progress, { ...options, clickCount: cc });
+      }
     } else {
       const promises = [];
       const movePromise = this.move(progress, x, y, { forClick: true, steps });

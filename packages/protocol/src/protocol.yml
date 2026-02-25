@@ -1381,6 +1381,14 @@ BrowserContext:
       returns:
         session: CDPSession
 
+    getExistingCDPSession:
+      title: Get existing CDP session for a page or frame
+      parameters:
+        page: Page?
+        frame: Frame?
+      returns:
+        session: CDPSession
+
     harStart:
       internal: true
       parameters:

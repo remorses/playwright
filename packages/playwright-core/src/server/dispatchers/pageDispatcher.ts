@@ -103,11 +103,7 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
     };
 
     this.addObjectListener(Page.Events.Close, () => {
-      // Resolve any pending mouse action acks so the server doesn't hang
-      for (const resolve of this._mouseActionResolvers.values()) {
-        resolve();
-      }
-      this._mouseActionResolvers.clear();
+      this._clearMouseActionState();
       this._dispatchEvent('close');
       this._dispose();
     });
@@ -336,12 +332,7 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
         await promise;
       };
     } else {
-      this._page._onMouseAction = null;
-      // Resolve any pending acks so nothing hangs
-      for (const resolve of this._mouseActionResolvers.values()) {
-        resolve();
-      }
-      this._mouseActionResolvers.clear();
+      this._clearMouseActionState();
     }
   }
 
@@ -426,7 +417,19 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
     this._dispatchEvent('frameDetached', { frame: FrameDispatcher.from(this.parentScope(), frame) });
   }
 
+  // Resolve any pending mouse action acks and unset the server callback.
+  // Called on page close, dispatcher dispose, and setOnMouseAction(false).
+  private _clearMouseActionState() {
+    this._page._onMouseAction = null;
+    for (const resolve of this._mouseActionResolvers.values()) {
+      resolve();
+    }
+    this._mouseActionResolvers.clear();
+  }
+
   override _onDispose() {
+    this._clearMouseActionState();
+
     // Avoid protocol calls for the closed page.
     if (this._page.isClosedOrClosingOrCrashed())
       return;
