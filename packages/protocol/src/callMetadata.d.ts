@@ -40,4 +40,8 @@ export type CallMetadata = {
   pageId?: string;
   frameId?: string;
   potentiallyClosesScope?: boolean;
+  // Last actionability failure reason, populated by _retryAction in dom.ts.
+  // Included in the TimeoutError message so agents get a descriptive error
+  // instead of just "Timeout Xms exceeded."
+  lastActionError?: string;
 };

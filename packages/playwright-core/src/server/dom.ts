@@ -321,38 +321,46 @@ export class ElementHandle<T extends Node = Node> extends js.JSHandle<T> {
         if (options.force || noAutoWaiting)
           throw new NonRecoverableDOMError('Element is not visible');
         progress.log('  element is not visible');
+        progress.metadata.lastActionError = 'Element is not visible — it may be hidden by CSS, inside a collapsed <details>, inactive tab, or closed accordion. Try: interact with the page to reveal it first, or use { force: true } to skip visibility checks';
         continue;
       }
       if (result === 'error:notinviewport') {
         if (options.force || noAutoWaiting)
           throw new NonRecoverableDOMError('Element is outside of the viewport');
         progress.log('  element is outside of the viewport');
+        progress.metadata.lastActionError = 'Element is outside of the viewport';
         continue;
       }
       if (result === 'error:optionsnotfound') {
         if (noAutoWaiting)
           throw new NonRecoverableDOMError('Did not find some options');
         progress.log('  did not find some options');
+        progress.metadata.lastActionError = 'Did not find some options';
         continue;
       }
       if (result === 'error:optionnotenabled') {
         if (noAutoWaiting)
           throw new NonRecoverableDOMError('Option being selected is not enabled');
         progress.log('  option being selected is not enabled');
+        progress.metadata.lastActionError = 'Option being selected is not enabled';
         continue;
       }
       if (typeof result === 'object' && 'hitTargetDescription' in result) {
         if (noAutoWaiting)
           throw new NonRecoverableDOMError(`${result.hitTargetDescription} intercepts pointer events`);
         progress.log(`  ${result.hitTargetDescription} intercepts pointer events`);
+        progress.metadata.lastActionError = `${result.hitTargetDescription} intercepts pointer events`;
         continue;
       }
       if (typeof result === 'object' && 'missingState' in result) {
         if (noAutoWaiting)
           throw new NonRecoverableDOMError(`Element is not ${result.missingState}`);
         progress.log(`  element is not ${result.missingState}`);
+        progress.metadata.lastActionError = `Element is not ${result.missingState}`;
         continue;
       }
+      // Clear stale reason so a later timeout phase doesn't inherit it
+      progress.metadata.lastActionError = undefined;
       return result;
     }
   }

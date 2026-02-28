@@ -1,5 +1,9 @@
 # @xmorse/playwright-core
 
+## 1.59.6
+
+- Include last actionability failure reason in `TimeoutError` messages. Instead of `"Timeout 2000ms exceeded."`, errors now say e.g. `"Timeout 2000ms exceeded. Element is not visible"` or `"Timeout 2000ms exceeded. <button name='Submit'> intercepts pointer events"`.
+
 ## 1.59.5
 
 - Add `locator.selector()` method that returns the internal selector string identifying a locator. Useful for cache keys, debugging, and any case where you need a stable string representation of a locator's selector chain.

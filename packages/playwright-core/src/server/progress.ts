@@ -92,12 +92,18 @@ export class ProgressController {
     };
 
     if (deadline) {
+      // Create error early to capture stack origin from the run() call site.
+      // The message is updated in the callback to include the latest actionability
+      // failure reason (e.g. "Element is not visible", "<button> intercepts pointer events").
       const timeoutError = new TimeoutError(`Timeout ${timeout}ms exceeded.`);
       timer = setTimeout(() => {
         // TODO: migrate this to "progress.disableTimeout()".
         if (this.metadata.pauseStartTime && !this.metadata.pauseEndTime)
           return;
         if (this._state === 'running') {
+          const reason = this.metadata.lastActionError;
+          if (reason)
+            timeoutError.message = `Timeout ${timeout}ms exceeded. ${reason}`;
           this._state = { error: timeoutError };
           this._forceAbortPromise.reject(timeoutError);
           this._controller.abort(timeoutError);
