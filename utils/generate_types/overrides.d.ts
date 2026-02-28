@@ -73,6 +73,11 @@ export interface Page {
   exposeBinding(name: string, playwrightBinding: (source: BindingSource, arg: JSHandle) => any, options: { handle: true }): Promise<void>;
   exposeBinding(name: string, playwrightBinding: (source: BindingSource, ...args: any[]) => any, options?: { handle?: boolean }): Promise<void>;
 
+  // Playwriter: callback invoked before each mouse action (move, down, up, wheel).
+  // Set to null to disable. When set, Playwright awaits this callback before dispatching
+  // the raw CDP mouse event, allowing ghost cursor overlays or action logging.
+  onMouseAction: ((event: MouseActionEvent) => Promise<void>) | null;
+
   removeAllListeners(type?: string): this;
   removeAllListeners(type: string | undefined, options: {
     /**
@@ -126,6 +131,10 @@ export interface BrowserContext {
   exposeBinding(name: string, playwrightBinding: (source: BindingSource, ...args: any[]) => any, options?: { handle?: boolean }): Promise<void>;
 
   addInitScript<Arg>(script: PageFunction<Arg, any> | { path?: string, content?: string }, arg?: Arg): Promise<void>;
+
+  // Playwriter: reuses Playwright's internal CDP session for a page/frame instead of
+  // creating a new one via Target.attachToTarget (which the relay intercepts).
+  getExistingCDPSession(page: Page | Frame): Promise<CDPSession>;
 
   removeAllListeners(type?: string): this;
   removeAllListeners(type: string | undefined, options: {
@@ -380,6 +389,14 @@ export type AndroidKey =
 
 export const _electron: Electron;
 export const _android: Android;
+
+// Playwriter: event payload for the onMouseAction callback on Page.
+export type MouseActionEvent = {
+  type: 'move' | 'down' | 'up' | 'wheel';
+  x: number;
+  y: number;
+  button: 'left' | 'right' | 'middle' | 'none';
+};
 
 // This is required to not export everything by default. See https://github.com/Microsoft/TypeScript/issues/19545#issuecomment-340490459
 export {};

@@ -3,6 +3,9 @@
 ## 1.59.5
 
 - Add `locator.selector()` method that returns the internal selector string identifying a locator. Useful for cache keys, debugging, and any case where you need a stable string representation of a locator's selector chain.
+- Add `page.onMouseAction` property to public types — callback invoked before each mouse action (move, down, up, wheel) with the `MouseActionEvent` payload.
+- Add `context.getExistingCDPSession(page)` to public types — reuses Playwright's internal CDP session instead of creating a new one via `Target.attachToTarget`.
+- Export `MouseActionEvent` type.
 
 ## 1.59.4
 

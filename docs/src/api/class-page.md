@@ -2772,6 +2772,14 @@ The page's main frame. Page is guaranteed to have a main frame which persists du
 * since: v1.8
 - type: <[Mouse]>
 
+## property: Page.onMouseAction
+* since: v1.59
+* langs: js
+- type: <[null]|[function]\([MouseActionEvent]\):[Promise]<[void]>>
+
+Callback invoked before each mouse action (move, down, up, wheel). Set to `null` to disable.
+When set, Playwright awaits this callback before dispatching the raw CDP mouse event.
+
 ## method: Page.onceDialog
 * since: v1.10
 * langs: java

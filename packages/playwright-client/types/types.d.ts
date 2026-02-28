@@ -974,6 +974,15 @@ export interface Page {
    */
   exposeBinding(name: string, playwrightBinding: (source: BindingSource, ...args: any[]) => any, options?: { handle?: boolean }): Promise<void>;
 
+  // Playwriter: callback invoked before each mouse action (move, down, up, wheel).
+  // Set to null to disable. When set, Playwright awaits this callback before dispatching
+  // the raw CDP mouse event, allowing ghost cursor overlays or action logging.
+  /**
+   * Callback invoked before each mouse action (move, down, up, wheel). Set to `null` to disable. When set, Playwright
+   * awaits this callback before dispatching the raw CDP mouse event.
+   */
+  onMouseAction: ((event: MouseActionEvent) => Promise<void>) | null;
+
   /**
    * Removes all the listeners of the given type (or all registered listeners if no type given). Allows to wait for
    * async listeners to complete or to ignore subsequent errors from these listeners.
@@ -8538,6 +8547,17 @@ export interface BrowserContext {
    * (only supported when passing a function).
    */
   addInitScript<Arg>(script: PageFunction<Arg, any> | { path?: string, content?: string }, arg?: Arg): Promise<void>;
+
+  // Playwriter: reuses Playwright's internal CDP session for a page/frame instead of
+  // creating a new one via Target.attachToTarget (which the relay intercepts).
+  /**
+   * Reuses Playwright's internal CDP session for a page or frame instead of creating a new one via
+   * `Target.attachToTarget`. Critical for relay/proxy environments where `Target.attachToTarget` is intercepted.
+   * @param page Target to get the existing session for. For consistency with
+   * [browserContext.newCDPSession(page)](https://playwright.dev/docs/api/class-browsercontext#browser-context-new-cdp-session),
+   * this parameter is named `page`, but it can be a `Page` or `Frame` type.
+   */
+  getExistingCDPSession(page: Page | Frame): Promise<CDPSession>;
 
   /**
    * Removes all the listeners of the given type (or all registered listeners if no type given). Allows to wait for
@@ -16702,6 +16722,14 @@ export type AndroidKey =
 
 export const _electron: Electron;
 export const _android: Android;
+
+// Playwriter: event payload for the onMouseAction callback on Page.
+export type MouseActionEvent = {
+  type: 'move' | 'down' | 'up' | 'wheel';
+  x: number;
+  y: number;
+  button: 'left' | 'right' | 'middle' | 'none';
+};
 
 // This is required to not export everything by default. See https://github.com/Microsoft/TypeScript/issues/19545#issuecomment-340490459
 export {};

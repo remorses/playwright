@@ -964,6 +964,22 @@ Here are some permissions that may be supported by some browsers:
 
 The [origin] to grant permissions to, e.g. "https://example.com".
 
+## async method: BrowserContext.getExistingCDPSession
+* since: v1.59
+* langs: js
+- returns: <[CDPSession]>
+
+Reuses Playwright's internal CDP session for a page or frame instead of creating a new one
+via `Target.attachToTarget`. Critical for relay/proxy environments where `Target.attachToTarget`
+is intercepted.
+
+### param: BrowserContext.getExistingCDPSession.page
+* since: v1.59
+- `page` <[Page]|[Frame]>
+
+Target to get the existing session for. For consistency with [`method: BrowserContext.newCDPSession`],
+this parameter is named `page`, but it can be a `Page` or `Frame` type.
+
 ## async method: BrowserContext.newCDPSession
 * since: v1.11
 - returns: <[CDPSession]>
