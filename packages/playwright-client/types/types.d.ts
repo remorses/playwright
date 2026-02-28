@@ -14717,6 +14717,11 @@ export interface Locator {
   }): Promise<Array<string>>;
 
   /**
+   * Returns the internal selector string that identifies this locator.
+   */
+  selector(): string;
+
+  /**
    * This method waits for [actionability](https://playwright.dev/docs/actionability) checks, then focuses the element and selects all its
    * text content.
    *

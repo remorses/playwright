@@ -1,5 +1,9 @@
 # @xmorse/playwright-core
 
+## 1.59.5
+
+- Add `locator.selector()` method that returns the internal selector string identifying a locator. Useful for cache keys, debugging, and any case where you need a stable string representation of a locator's selector chain.
+
 ## 1.59.4
 
 - Stop forcing light mode on pages connected via `connectOverCDP`. The default `colorScheme` fallback in `page.emulatedMedia()` changed from `'light'` to `'no-override'`, so the browser's actual system color scheme is preserved instead of being overridden on every page init.

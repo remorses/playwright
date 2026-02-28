@@ -1914,6 +1914,13 @@ Alternative locator to match.
 
 A page this locator belongs to.
 
+## method: Locator.selector
+* since: v1.59
+* langs: js
+- returns: <[string]>
+
+Returns the internal selector string that identifies this locator.
+
 ## async method: Locator.press
 * since: v1.14
 

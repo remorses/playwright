@@ -4300,27 +4300,6 @@ export interface Page {
   sessionId(): string|undefined;
 
   /**
-   * Async callback invoked before each mouse action (move, down, up, wheel).
-   * Fires for both explicit `page.mouse.*` calls and locator-initiated actions
-   * like `page.locator().click()`. The actual CDP mouse event is dispatched
-   * only after the callback resolves.
-   *
-   * Set to `null` to disable.
-   *
-   * @example
-   * ```js
-   * page.onMouseAction = async ({ type, x, y, button }) => {
-   *   if (type === 'move') {
-   *     await page.evaluate(({x, y}) => {
-   *       globalThis.__ghostCursor?.moveTo(x, y);
-   *     }, {x, y});
-   *   }
-   * };
-   * ```
-   */
-  onMouseAction: ((event: MouseActionEvent) => Promise<void>) | null;
-
-  /**
    * **NOTE** Use locator-based
    * [locator.setChecked(checked[, options])](https://playwright.dev/docs/api/class-locator#locator-set-checked)
    * instead. Read more about [locators](https://playwright.dev/docs/locators).
@@ -9392,22 +9371,6 @@ export interface BrowserContext {
    * `Page` or `Frame` type.
    */
   newCDPSession(page: Page|Frame): Promise<CDPSession>;
-
-  /**
-   * **NOTE** CDP sessions are only supported on Chromium-based browsers.
-   *
-   * Returns a CDPSession wrapping the page's (or frame's) already-existing internal
-   * CDP session. Unlike {@link newCDPSession} which creates a new Chrome debugging session
-   * via Target.attachToTarget, this reuses the session Playwright already holds internally.
-   *
-   * The returned session shares the same WebSocket transport. Detach is a no-op since
-   * Playwright's page lifecycle owns the underlying session.
-   *
-   * This is useful in relay/proxy environments where Target.attachToTarget is intercepted
-   * and cannot create real new sessions.
-   * @param page Target to get existing session for. Can be a `Page` or `Frame`.
-   */
-  getExistingCDPSession(page: Page|Frame): Promise<CDPSession>;
 
   /**
    * Creates a new page in the browser context.
@@ -14752,6 +14715,11 @@ export interface Locator {
      */
     timeout?: number;
   }): Promise<Array<string>>;
+
+  /**
+   * Returns the internal selector string that identifies this locator.
+   */
+  selector(): string;
 
   /**
    * This method waits for [actionability](https://playwright.dev/docs/actionability) checks, then focuses the element and selects all its
@@ -23365,13 +23333,3 @@ export interface ChromiumBrowser extends Browser { }
 export interface FirefoxBrowser extends Browser { }
 export interface WebKitBrowser extends Browser { }
 export interface ChromiumCoverage extends Coverage { }
-
-/**
- * Event payload for the {@link Page.onMouseAction} callback.
- */
-export interface MouseActionEvent {
-  type: 'move' | 'down' | 'up' | 'wheel';
-  x: number;
-  y: number;
-  button: 'left' | 'right' | 'middle' | 'none';
-}
