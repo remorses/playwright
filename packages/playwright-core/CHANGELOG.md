@@ -2,14 +2,11 @@
 
 ## 1.59.6
 
-- Include last actionability failure reason in `TimeoutError` messages. Instead of `"Timeout 2000ms exceeded."`, errors now say e.g. `"Timeout 2000ms exceeded. Element is not visible"` or `"Timeout 2000ms exceeded. <button name='Submit'> intercepts pointer events"`.
-
-## 1.59.5
-
-- Add `locator.selector()` method that returns the internal selector string identifying a locator. Useful for cache keys, debugging, and any case where you need a stable string representation of a locator's selector chain.
-- Add `page.onMouseAction` property to public types — callback invoked before each mouse action (move, down, up, wheel) with the `MouseActionEvent` payload.
-- Add `context.getExistingCDPSession(page)` to public types — reuses Playwright's internal CDP session instead of creating a new one via `Target.attachToTarget`.
-- Export `MouseActionEvent` type.
+1. **Descriptive actionability errors** — `TimeoutError` messages now include the specific reason a click failed. Instead of `"Timeout 2000ms exceeded."`, errors say e.g. `"Timeout 2000ms exceeded. Element is not visible — it may be hidden by CSS, inside a collapsed <details>, inactive tab, or closed accordion. Try: interact with the page to reveal it first, or use { force: true } to skip visibility checks"` or `"Timeout 2000ms exceeded. <button name='Submit'> intercepts pointer events"`.
+2. **Added `locator.selector()`** — returns the internal selector string for a locator. Useful for cache keys, debugging, or any case where you need a stable string representation of the selector chain.
+3. **Added `page.onMouseAction`** — callback invoked before each mouse action (move, down, up, wheel) with a `MouseActionEvent` payload. Useful for intercepting and visualizing pointer activity.
+4. **Added `context.getExistingCDPSession(page)`** — reuses Playwright's internal CDP session instead of creating a new one via `Target.attachToTarget`. Critical for relay/proxy environments where `Target.attachToTarget` is intercepted.
+5. **Export `MouseActionEvent` type** — now available for TypeScript consumers.
 
 ## 1.59.4
 
