@@ -356,7 +356,10 @@ export class ElementHandle<T extends Node = Node> extends js.JSHandle<T> {
         if (noAutoWaiting)
           throw new NonRecoverableDOMError(`Element is not ${result.missingState}`);
         progress.log(`  element is not ${result.missingState}`);
-        progress.metadata.lastActionError = `Element is not ${result.missingState}`;
+        const visibilityTip = result.missingState === 'visible'
+          ? ' — it may be hidden by CSS, inside a collapsed <details>, inactive tab, or closed accordion. Try: interact with the page to reveal it first, or use { force: true } to skip visibility checks'
+          : '';
+        progress.metadata.lastActionError = `Element is not ${result.missingState}${visibilityTip}`;
         continue;
       }
       // Clear stale reason so a later timeout phase doesn't inherit it
