@@ -143,6 +143,15 @@ export abstract class ChannelOwner<T extends channels.Channel = channels.Channel
   }
 
   private _createChannel(base: Object): T {
+    // Custom inspect for the proxy target — without this, util.inspect would
+    // traverse the bare EventEmitter target and expose `_platform.env` (=
+    // process.env). Must be set on the target directly because Node's
+    // util.inspect bypasses Proxy traps when looking up the inspect symbol.
+    // See https://github.com/remorses/playwriter/issues/82
+    const self = this;
+    (base as any)[Symbol.for('nodejs.util.inspect.custom')] = function () {
+      return `Channel<${self._type}@${self._guid}>`;
+    };
     const channel = new Proxy(base, {
       get: (obj: any, prop: string | symbol) => {
         if (typeof prop === 'string') {
@@ -216,6 +225,24 @@ export abstract class ChannelOwner<T extends channels.Channel = channels.Channel
       _type: this._type,
       _guid: this._guid,
     };
+  }
+
+  // Custom util.inspect handler — prevents leaking internal references
+  // (like `_connection._platform.env = process.env`) when users do
+  // `console.log(response)` or auto-return a Playwright object from a REPL.
+  // Without this, util.inspect traverses _connection → _platform → env and
+  // dumps every environment variable, including secrets like API keys.
+  // See https://github.com/remorses/playwriter/issues/82
+  //
+  // _initializer is safe to expose because it only contains protocol data
+  // (strings, numbers, arrays of objects) plus ChannelOwner refs that will
+  // recursively use this same safe inspect handler.
+  [Symbol.for('nodejs.util.inspect.custom')](_depth: number, options: any, inspect: (value: any, opts: any) => string) {
+    const header = `${this._type}@${this._guid}`;
+    if (!this._initializer || typeof this._initializer !== 'object')
+      return header;
+    const initializerDepth = typeof options?.depth === 'number' ? Math.max(options.depth - 1, 0) : 2;
+    return `${header} ${inspect(this._initializer, { ...options, depth: initializerDepth })}`;
   }
 }
 

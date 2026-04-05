@@ -1,5 +1,11 @@
 # @xmorse/playwright-core
 
+## 1.59.7
+
+**Security fix** — custom `util.inspect` handler on `ChannelOwner` and channel proxies. Previously `console.log(response)` or auto-returning a Playwright object from a REPL traversed `_connection._platform.env` (= `process.env`) at depth 4 and leaked every environment variable to the terminal, including API keys and secrets. Now Playwright objects render as a concise summary like `Response@response@abc123 { url: '...', status: 200 }`.
+
+See [playwriter#82](https://github.com/remorses/playwriter/issues/82).
+
 ## 1.59.6
 
 1. **Descriptive actionability errors** — `TimeoutError` messages now include the specific reason a click failed. Instead of `"Timeout 2000ms exceeded."`, errors say e.g. `"Timeout 2000ms exceeded. Element is not visible — it may be hidden by CSS, inside a collapsed <details>, inactive tab, or closed accordion. Try: interact with the page to reveal it first, or use { force: true } to skip visibility checks"` or `"Timeout 2000ms exceeded. <button name='Submit'> intercepts pointer events"`.
