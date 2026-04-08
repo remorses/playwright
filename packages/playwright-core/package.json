@@ -1,6 +1,6 @@
 {
   "name": "@xmorse/playwright-core",
-  "version": "1.59.7",
+  "version": "1.59.8",
   "description": "A high-level API to automate web browsers",
   "repository": {
     "type": "git",
@@ -22,7 +22,7 @@
     "debug": "^4.3.4",
     "diff": "^7.0.0",
     "dotenv": "^16.4.5",
-    "get-stream": "^9.0.1",
+    "get-stream": "^5.2.0",
     "graceful-fs": "^4.2.11",
     "https-proxy-agent": "7.0.6",
     "jpeg-js": "0.4.4",

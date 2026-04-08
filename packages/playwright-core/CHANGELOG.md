@@ -1,5 +1,9 @@
 # @xmorse/playwright-core
 
+## 1.59.8
+
+**Fix CommonJS unzip dependency resolution** — the fork now depends on `get-stream@^5.2.0`, which matches the vendored CommonJS `extract-zip.js` runtime used by `zipBundle`. This fixes `Error [ERR_REQUIRE_ESM]: require() of ES Module ... get-stream ... not supported` on clean installs and Windows CLI startup paths like `npx playwriter serve`.
+
 ## 1.59.7
 
 **Security fix** — custom `util.inspect` handler on `ChannelOwner` and channel proxies. Previously `console.log(response)` or auto-returning a Playwright object from a REPL traversed `_connection._platform.env` (= `process.env`) at depth 4 and leaked every environment variable to the terminal, including API keys and secrets. Now Playwright objects render as a concise summary like `Response@response@abc123 { url: '...', status: 200 }`.
