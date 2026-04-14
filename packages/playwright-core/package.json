@@ -1,6 +1,6 @@
 {
   "name": "@xmorse/playwright-core",
-  "version": "1.59.8",
+  "version": "1.59.9",
   "description": "A high-level API to automate web browsers",
   "repository": {
     "type": "git",
@@ -16,7 +16,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@lowire/loop": "^0.0.25",
-    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "colors": "1.4.0",
     "commander": "^13.0.0",
     "debug": "^4.3.4",

@@ -25,6 +25,12 @@ type OnHandle = (accept: boolean, promptText?: string) => Promise<void>;
 
 export type DialogType = 'alert' | 'beforeunload' | 'confirm' | 'prompt';
 
+function isBenignDialogCloseError(error: unknown): boolean {
+  if (!(error instanceof Error))
+    return false;
+  return error.message.includes('Page.handleJavaScriptDialog') && error.message.includes('No dialog is showing');
+}
+
 export class Dialog extends SdkObject {
   private _page: Page;
   private _type: DialogType;
@@ -73,10 +79,19 @@ export class Dialog extends SdkObject {
   }
 
   async close() {
-    if (this._type === 'beforeunload')
-      await this.accept();
-    else
-      await this.dismiss();
+    try {
+      if (this._type === 'beforeunload')
+        await this.accept();
+      else
+        await this.dismiss();
+    } catch (error) {
+      // Playwriter can expose one shared tab to multiple connectOverCDP clients.
+      // If several clients auto-close the same JS dialog, Chrome accepts the first
+      // Page.handleJavaScriptDialog and rejects later ones with "No dialog is showing".
+      // close() is best-effort auto cleanup, so ignore that race instead of crashing.
+      if (!isBenignDialogCloseError(error))
+        throw error;
+    }
   }
 }
 
