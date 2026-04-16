@@ -1,12 +1,9 @@
 # @xmorse/playwright-core
 
-## 1.59.9
+## 1.59.10
 
-**Ignore duplicate auto-close races for shared JS dialogs** — `Dialog.close()` now treats Chromium's `Protocol error (Page.handleJavaScriptDialog): {"code":-32602,"message":"No dialog is showing"}` as benign. This happens when multiple `connectOverCDP()` clients are attached to the same Playwriter tab and they all auto-dismiss the same alert/confirm/prompt. The first close wins; later best-effort auto-closes no longer crash the process.
-
-## 1.59.8
-
-**Fix CommonJS unzip dependency resolution** — the fork now depends on `get-stream@^5.2.0`, which matches the vendored CommonJS `extract-zip.js` runtime used by `zipBundle`. This fixes `Error [ERR_REQUIRE_ESM]: require() of ES Module ... get-stream ... not supported` on clean installs and Windows CLI startup paths like `npx playwriter serve`.
+1. **Fix CommonJS unzip startup on clean installs** — the fork now depends on `get-stream@^5.2.0`, which matches the vendored CommonJS `extract-zip.js` runtime used by `zipBundle`. This fixes `Error [ERR_REQUIRE_ESM]: require() of ES Module ... get-stream ... not supported` on clean installs and Windows startup paths like `npx playwriter serve`.
+2. **Ignore duplicate auto-close races for shared JS dialogs** — `Dialog.close()` now treats Chromium's `Protocol error (Page.handleJavaScriptDialog): {"code":-32602,"message":"No dialog is showing"}` as benign. When multiple `connectOverCDP()` clients are attached to the same Playwriter tab, the first dialog close wins and later best-effort closes no longer crash the process.
 
 ## 1.59.7
 
