@@ -178,8 +178,17 @@ export class RecorderApp {
   static async show(context: BrowserContext, params: channels.BrowserContextEnableRecorderParams) {
     if (process.env.PW_CODEGEN_NO_INSPECTOR)
       return;
+    const existingRecorder = await Recorder.existingForContext(context);
     const recorder = await Recorder.forContext(context, params);
     if (params.recorderMode === 'api') {
+      // Re-enabling after disableRecorder(): the cached recorder still has the
+      // ProgrammaticRecorderApp listeners attached but its mode was set to
+      // 'none'. Restore the requested mode instead of attaching duplicate
+      // listeners (which would double every recorded action event).
+      if (existingRecorder) {
+        existingRecorder.setMode(params.mode || 'recording');
+        return;
+      }
       const browserName = context._browser.options.name;
       await ProgrammaticRecorderApp.run(context, recorder, browserName, params);
       return;
