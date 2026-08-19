@@ -1425,7 +1425,8 @@ export class Recorder {
     };
     this._currentTool = this._tools.none;
     this._currentTool.install?.();
-    if (injectedScript.window.top === injectedScript.window) {
+    // API mode (playwriter recorder): skip the overlay toolbar; the extension's own toolbar handles recording UI
+    if (this._recorderMode !== 'api' && injectedScript.window.top === injectedScript.window) {
       this.overlay = new Overlay(this);
       this.overlay.setUIState(this.state);
     }

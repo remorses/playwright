@@ -1685,7 +1685,18 @@ export class Frame extends SdkObject<FrameEventMap> {
   }
 
   async extendInjectedScript(source: string, arg?: any) {
-    const context = await this._context('main');
+    // Bound the wait: InternalFrameNavigatedToNewDocument can fire before the
+    // new main world exists. Do not wait forever (OOPIF, empty target).
+    // Callers already catch; a later navigation retries install.
+    const context = this._existingMainContext() ?? await Promise.race([
+      this._context('main'),
+      new Promise<null>(resolve => {
+        const timer = setTimeout(() => resolve(null), 1000);
+        timer.unref?.();
+      }),
+    ]);
+    if (!context)
+      throw new Error('Frame does not yet have a main execution context');
     const injectedScriptHandle = await context.injectedScript();
     await injectedScriptHandle.evaluate((injectedScript, { source, arg }) => {
       injectedScript.extend(source, arg);
