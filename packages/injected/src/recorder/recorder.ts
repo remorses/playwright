@@ -742,6 +742,9 @@ class RecordActionTool implements RecorderTool {
 
 class JsonRecordActionTool implements RecorderTool {
   private _recorder: Recorder;
+  private _lastElement: HTMLElement | null = null;
+  private _lastSelector: string | null = null;
+  private _pendingClickAction: { action: actions.ClickAction, timeout: number } | undefined;
 
   constructor(recorder: Recorder) {
     this._recorder = recorder;
@@ -753,6 +756,9 @@ class JsonRecordActionTool implements RecorderTool {
   }
 
   uninstall() {
+    this._commitPendingClickAction();
+    this._lastElement = null;
+    this._lastSelector = null;
     this._recorder.highlight.install();
   }
 
@@ -771,6 +777,7 @@ class JsonRecordActionTool implements RecorderTool {
     const checkbox = asCheckbox(element);
     const selector = this._selectorFor(element);
     if (checkbox && event.detail === 1) {
+      this._commitPendingClickAction();
       // Interestingly, inputElement.checked is reversed inside this event handler.
       this._recorder.recordAction({
         name: checkbox.checked ? 'check' : 'uncheck',
@@ -780,18 +787,58 @@ class JsonRecordActionTool implements RecorderTool {
       return;
     }
 
+    // Only queue the first click. detail=2 is the same gesture; onDblClick records it.
+    if (event.detail !== 1)
+      return;
+    this._commitPendingClickAction();
+    this._pendingClickAction = {
+      action: {
+        name: 'click',
+        selector,
+        position: positionForEvent(event),
+        signals: [],
+        button: buttonForEvent(event),
+        modifiers: modifiersForEvent(event),
+        clickCount: 1,
+        ...pagePointForEvent(event),
+      } as actions.ClickAction,
+      timeout: this._recorder.injectedScript.utils.builtins.setTimeout(() => this._commitPendingClickAction(), 200)
+    };
+  }
+
+  onDblClick(event: MouseEvent) {
+    const element = this._recorder.deepEventTarget(event);
+    if (isRangeInput(element))
+      return;
+    if (this._shouldIgnoreMouseEvent(event))
+      return;
+    this._cancelPendingClickAction();
     this._recorder.recordAction({
       name: 'click',
-      selector,
+      selector: this._selectorFor(element),
       position: positionForEvent(event),
       signals: [],
       button: buttonForEvent(event),
       modifiers: modifiersForEvent(event),
       clickCount: event.detail,
-    });
+      ...pagePointForEvent(event),
+    } as actions.ClickAction);
+  }
+
+  private _commitPendingClickAction() {
+    if (this._pendingClickAction)
+      this._recorder.recordAction(this._pendingClickAction.action);
+    this._cancelPendingClickAction();
+  }
+
+  private _cancelPendingClickAction() {
+    if (this._pendingClickAction)
+      this._recorder.injectedScript.utils.builtins.clearTimeout(this._pendingClickAction.timeout);
+    this._pendingClickAction = undefined;
   }
 
   onContextMenu(event: MouseEvent): void {
+    this._commitPendingClickAction();
     const element = this._recorder.deepEventTarget(event);
     const selector = this._selectorFor(element);
     this._recorder.recordAction({
@@ -806,6 +853,7 @@ class JsonRecordActionTool implements RecorderTool {
   }
 
   onInput(event: Event) {
+    this._commitPendingClickAction();
     const element = this._recorder.deepEventTarget(event);
 
     const selector = this._selectorFor(element);
@@ -847,6 +895,7 @@ class JsonRecordActionTool implements RecorderTool {
   }
 
   onKeyDown(event: KeyboardEvent) {
+    this._commitPendingClickAction();
     if (!this._shouldGenerateKeyPressFor(event))
       return;
 
@@ -925,9 +974,15 @@ class JsonRecordActionTool implements RecorderTool {
     return false;
   }
 
-  // API mode skips full-page ARIA trees. They blocked clicks 500-700ms; playwriter snapshots after the action.
+  // Cache per element so typing does not rebuild the locator on every key.
+  // Official RecordActionTool does the same via _activeModel from hover/focus.
   private _selectorFor(element: HTMLElement): string {
-    return this._recorder.injectedScript.generateSelector(element, { testIdAttributeName: this._recorder.state.testIdAttributeName }).selector;
+    if (this._lastElement === element && this._lastSelector)
+      return this._lastSelector;
+    const selector = this._recorder.injectedScript.generateSelector(element, { testIdAttributeName: this._recorder.state.testIdAttributeName }).selector;
+    this._lastElement = element;
+    this._lastSelector = selector;
+    return selector;
   }
 }
 
@@ -1832,6 +1887,18 @@ function buttonForEvent(event: MouseEvent): 'left' | 'middle' | 'right' {
     case 3: return 'right';
   }
   return 'left';
+}
+
+function pagePointForEvent(event: MouseEvent) {
+  const view = (event.view || event.target && (event.target as Node).ownerDocument?.defaultView) as Window | null;
+  return {
+    x: Math.round(event.pageX),
+    y: Math.round(event.pageY),
+    clientX: Math.round(event.clientX),
+    clientY: Math.round(event.clientY),
+    scrollX: Math.round(view?.scrollX || 0),
+    scrollY: Math.round(view?.scrollY || 0),
+  };
 }
 
 function positionForEvent(event: MouseEvent): Point |undefined {
