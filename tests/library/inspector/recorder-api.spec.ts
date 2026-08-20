@@ -129,6 +129,19 @@ test('should type', async ({ context }) => {
   expect(normalizeCode(fillActions[0].code)).toEqual(`await page.getByRole('textbox').fill('Hello');`);
 });
 
+test('should not double-record click after goBack', async ({ context }) => {
+  const log = await startRecording(context);
+  const page = await context.newPage();
+  await page.setContent(`<button>Submit</button>`);
+  await page.getByRole('button', { name: 'Submit' }).click();
+  expect(log.action('click')).toHaveLength(1);
+
+  await page.goto('about:blank');
+  await page.goBack();
+  await page.getByRole('button', { name: 'Submit' }).click();
+  expect(log.action('click')).toHaveLength(2);
+});
+
 test('should disable recorder', async ({ context }) => {
   const log = await startRecording(context);
   const page = await context.newPage();

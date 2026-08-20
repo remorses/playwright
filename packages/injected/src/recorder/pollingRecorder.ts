@@ -38,8 +38,17 @@ export class PollingRecorder implements RecorderDelegate {
   private _lastStateJSON: string | undefined;
 
   constructor(injectedScript: InjectedScript, options?: { recorderMode?: 'default' | 'api' }) {
+    // extendInjectedScript can run again on the same InjectedScript (bfcache
+    // restore, InternalFrameNavigatedToNewDocument after goBack). A second
+    // instance would add another click/keydown listener set: two clicks, one
+    // merged fill, two Enter presses. Store on InjectedScript, not window.
+    const existing = injectedScript._pollingRecorder as PollingRecorder | undefined;
+    if (existing)
+      return existing;
+
     this._recorder = new Recorder(injectedScript, options);
     this._embedder = injectedScript.window as any;
+    injectedScript._pollingRecorder = this;
 
     injectedScript.onGlobalListenersRemoved.add(() => this._recorder.installListeners());
 
