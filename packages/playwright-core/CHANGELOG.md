@@ -1,5 +1,13 @@
 # @xmorse/playwright-core
 
+## 1.59.11
+
+1. **Faster API-mode recorder** — the injected recorder no longer walks the full page ARIA tree on every click, fill, or keypress. Those walks ran twice inside the click handler and blocked the tab for 500–700ms per click. Playwriter already captures a snapshot after the action, so the injected trees were unused. Typing reuses the focused-element locator.
+2. **One recorder instance per window** — `extendInjectedScript` can run again after `goBack` (bfcache restore). A second `PollingRecorder` used to attach another click/keydown listener set, so one user click became two recorded clicks. There is now one instance per window.
+3. **Re-enable after `_disableRecorder()` works** — a second recording on the same context used to capture no actions because the cached server recorder stayed in mode `none`. Re-enabling now restores the requested mode without attaching duplicate listeners.
+4. **File picks are `setInputFiles` actions** — choosing files in `input[type=file]` records as a Playwright `setInputFiles` action instead of a custom event.
+5. **`extendInjectedScript` times out** — empty frames and targets that never get a document no longer hang recorder start.
+
 ## 1.59.10
 
 1. **Fix CommonJS unzip startup on clean installs** — the fork now depends on `get-stream@^5.2.0`, which matches the vendored CommonJS `extract-zip.js` runtime used by `zipBundle`. This fixes `Error [ERR_REQUIRE_ESM]: require() of ES Module ... get-stream ... not supported` on clean installs and Windows startup paths like `npx playwriter serve`.
