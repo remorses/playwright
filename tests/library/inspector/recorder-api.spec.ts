@@ -33,7 +33,7 @@ class RecorderLog {
 
 async function startRecording(context) {
   const log = new RecorderLog();
-  await (context as any)._enableRecorder({
+  await context._enableRecorder({
     mode: 'recording',
     recorderMode: 'api',
   }, log);
@@ -145,9 +145,9 @@ test('should not double-record click after goBack', async ({ context }) => {
 test('should record one click after concurrent enableRecorder', async ({ context }) => {
   const log = new RecorderLog();
   await Promise.all([
-    (context as any)._enableRecorder({ mode: 'recording', recorderMode: 'api' }, log),
-    (context as any)._enableRecorder({ mode: 'recording', recorderMode: 'api' }, log),
-    (context as any)._enableRecorder({ mode: 'recording', recorderMode: 'api' }, log),
+    context._enableRecorder({ mode: 'recording', recorderMode: 'api' }, log),
+    context._enableRecorder({ mode: 'recording', recorderMode: 'api' }, log),
+    context._enableRecorder({ mode: 'recording', recorderMode: 'api' }, log),
   ]);
   const page = await context.newPage();
   await page.setContent(`<button>Submit</button>`);
@@ -162,7 +162,7 @@ test('should disable recorder', async ({ context }) => {
   await page.getByRole('button', { name: 'Submit' }).click();
   await page.getByRole('button', { name: 'Submit' }).click();
   expect(log.action('click')).toHaveLength(2);
-  await (context as any)._disableRecorder();
+  await context._disableRecorder();
   await page.getByRole('button', { name: 'Submit' }).click();
   expect(log.action('click')).toHaveLength(2);
 });

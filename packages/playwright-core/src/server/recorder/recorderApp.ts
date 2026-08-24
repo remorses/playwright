@@ -112,7 +112,7 @@ export class RecorderApp {
       this._page.once('close', () => {
         this._recorder.close();
         this._page.browserContext.close({ reason: 'Recorder window closed' }).catch(() => {});
-        delete (inspectedContext as any)[recorderAppSymbol];
+        delete inspectedContext._hasRecorderApp;
       });
 
       await this._page.mainFrame().goto(progress, 'https://playwright/index.html');
@@ -182,9 +182,9 @@ export class RecorderApp {
       // Attach ProgrammaticRecorderApp once per context. Check+set is
       // synchronous so concurrent enableRecorder() calls cannot each run().
       // Re-enable after disableRecorder() only restores mode.
-      const first = !(context as any)[programmaticRecorderSymbol];
+      const first = !context._programmaticRecorderAttached;
       if (first)
-        (context as any)[programmaticRecorderSymbol] = true;
+        context._programmaticRecorderAttached = true;
       const recorder = await Recorder.forContext(context, params);
       if (first) {
         const browserName = context._browser.options.name;
@@ -208,9 +208,9 @@ export class RecorderApp {
   }
 
   private static async _show(recorder: Recorder, inspectedContext: BrowserContext, params: channels.BrowserContextEnableRecorderParams) {
-    if ((inspectedContext as any)[recorderAppSymbol])
+    if (inspectedContext._hasRecorderApp)
       return;
-    (inspectedContext as any)[recorderAppSymbol] = true;
+    inspectedContext._hasRecorderApp = true;
     const sdkLanguage = inspectedContext._browser.sdkLanguage();
     const headed = !!inspectedContext._browser.options.headful;
     const recorderPlaywright = (require('../playwright').createPlaywright as typeof import('../playwright').createPlaywright)({ sdkLanguage: 'javascript', isInternalPlaywright: true });
@@ -245,7 +245,7 @@ export class RecorderApp {
 
     const recorderApp = new RecorderApp(recorder, appParams, page, appContext._browser.options.wsEndpoint);
     await recorderApp._init(inspectedContext);
-    (inspectedContext as any).recorderAppForTest = recorderApp;
+    inspectedContext.recorderAppForTest = recorderApp;
   }
 
   private _wireListeners(recorder: Recorder) {
@@ -414,5 +414,4 @@ function createRecorderFrontend(page: Page): RecorderFrontend {
   });
 }
 
-const recorderAppSymbol = Symbol('recorderApp');
-const programmaticRecorderSymbol = Symbol('programmaticRecorder');
+

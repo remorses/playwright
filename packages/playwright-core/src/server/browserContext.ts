@@ -38,6 +38,7 @@ import { Tracing } from './trace/recorder/tracing';
 import * as rawStorageSource from '../generated/storageScriptSource';
 
 import type { Artifact } from './artifact';
+import type { Recorder } from './recorder';
 import type { Browser, BrowserOptions } from './browser';
 import type { ConsoleMessage } from './console';
 import type { Download } from './download';
@@ -114,6 +115,10 @@ export abstract class BrowserContext<EM extends EventMap = EventMap> extends Sdk
   private _playwrightBindingExposed?: Promise<void>;
   readonly dialogManager: DialogManager;
   private _consoleApiExposed = false;
+  _recorderPromise?: Promise<Recorder>;
+  _programmaticRecorderAttached?: boolean;
+  _hasRecorderApp?: boolean;
+  recorderAppForTest?: RecorderApp;
 
   constructor(browser: Browser, options: types.BrowserContextOptions, browserContextId: string | undefined) {
     super(browser, 'browser-context');

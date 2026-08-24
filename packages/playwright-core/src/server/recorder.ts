@@ -40,8 +40,6 @@ import type * as actions from '@recorder/actions';
 import type { CallLog, CallLogStatus, ElementInfo, Mode, OverlayState, Source, UIState } from '@recorder/recorderTypes';
 import type { RegisteredListener } from '../utils';
 
-const recorderSymbol = Symbol('recorderSymbol');
-
 type BindingSource = { frame: Frame, page: Page };
 
 export const RecorderEvent = {
@@ -92,17 +90,16 @@ export class Recorder extends EventEmitter<RecorderEventMap> implements Instrume
   private _callLogs: CallLog[] = [];
 
   static forContext(context: BrowserContext, params: channels.BrowserContextEnableRecorderParams): Promise<Recorder> {
-    let recorderPromise = (context as any)[recorderSymbol] as Promise<Recorder>;
+    let recorderPromise = context._recorderPromise;
     if (!recorderPromise) {
       recorderPromise = Recorder._create(context, params);
-      (context as any)[recorderSymbol] = recorderPromise;
+      context._recorderPromise = recorderPromise;
     }
     return recorderPromise;
   }
 
   static async existingForContext(context: BrowserContext): Promise<Recorder | undefined> {
-    const recorderPromise = (context as any)[recorderSymbol] as Promise<Recorder> | undefined;
-    return await recorderPromise;
+    return await context._recorderPromise;
   }
 
   private static async _create(context: BrowserContext, params: channels.BrowserContextEnableRecorderParams = {}): Promise<Recorder> {

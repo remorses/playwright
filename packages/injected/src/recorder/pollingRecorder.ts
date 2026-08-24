@@ -31,6 +31,13 @@ interface Embedder {
   __pw_refreshOverlay(): void;
 }
 
+declare global {
+  interface Document {
+    __pwPollingRecorder?: PollingRecorder;
+  }
+  interface Window extends Embedder {}
+}
+
 export class PollingRecorder implements RecorderDelegate {
   private _recorder: Recorder;
   private _embedder: Embedder;
@@ -42,7 +49,7 @@ export class PollingRecorder implements RecorderDelegate {
     // restore, InternalFrameNavigatedToNewDocument after goBack). A second
     // instance would add another click/keydown listener set: two clicks, one
     // merged fill, two Enter presses.
-    const existing = injectedScript._pollingRecorder as PollingRecorder | undefined;
+    const existing = injectedScript._pollingRecorder;
     if (existing)
       return existing;
 
@@ -51,14 +58,14 @@ export class PollingRecorder implements RecorderDelegate {
     // does not help. Recorder is only extended in MAIN world, so a document
     // flag is world-safe (isolated-world expandos are not shared). A new
     // document gets a new flag and new listeners.
-    const doc = injectedScript.document as Document & { __pwPollingRecorder?: PollingRecorder };
+    const doc = injectedScript.document;
     if (doc.__pwPollingRecorder) {
       injectedScript._pollingRecorder = doc.__pwPollingRecorder;
       return doc.__pwPollingRecorder;
     }
 
     this._recorder = new Recorder(injectedScript, options);
-    this._embedder = injectedScript.window as any;
+    this._embedder = injectedScript.window;
     injectedScript._pollingRecorder = this;
     doc.__pwPollingRecorder = this;
 

@@ -23,7 +23,24 @@ import type { Source } from '../../../packages/recorder/src/recorderTypes';
 import type { CommonFixtures, TestChildProcess } from '../../config/commonFixtures';
 import { expect } from '@playwright/test';
 import { nodePlatform } from '../../../packages/playwright-core/lib/server/utils/nodePlatform';
+import type * as actions from '@recorder/actions';
 export { expect } from '@playwright/test';
+
+declare module 'playwright-core' {
+  interface BrowserContext {
+    _enableRecorder(params: {
+      mode?: string;
+      language?: string;
+      recorderMode?: 'default' | 'api';
+      testIdAttributeName?: string;
+    }, sink?: {
+      actionAdded?(page: Page, actionInContext: actions.ActionInContext, code: string): void;
+      actionUpdated?(page: Page, actionInContext: actions.ActionInContext, code: string): void;
+      signalAdded?(page: Page, signal: actions.SignalInContext): void;
+    }): Promise<void>;
+    _disableRecorder(): Promise<void>;
+  }
+}
 
 type CLITestArgs = {
   recorderPageGetter: () => Promise<Page>;
@@ -90,7 +107,7 @@ export const test = contextTest.extend<CLITestArgs>({
 
   openRecorder: async ({ context, recorderPageGetter }, use) => {
     await use(async options => {
-      await (context as any)._enableRecorder({
+      await context._enableRecorder({
         mode: 'recording',
         ...options
       });

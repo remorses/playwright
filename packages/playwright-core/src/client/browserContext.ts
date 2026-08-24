@@ -49,7 +49,7 @@ import type { Platform } from './platform';
 import type * as channels from '@protocol/channels';
 import type * as actions from '@recorder/actions';
 
-interface RecorderEventSink {
+export interface RecorderEventSink {
   actionAdded?(page: Page, actionInContext: actions.ActionInContext, code: string): void;
   actionUpdated?(page: Page, actionInContext: actions.ActionInContext, code: string): void;
   signalAdded?(page: Page, signal: actions.SignalInContext): void;
