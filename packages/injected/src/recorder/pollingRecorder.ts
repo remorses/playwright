@@ -41,14 +41,26 @@ export class PollingRecorder implements RecorderDelegate {
     // extendInjectedScript can run again on the same InjectedScript (bfcache
     // restore, InternalFrameNavigatedToNewDocument after goBack). A second
     // instance would add another click/keydown listener set: two clicks, one
-    // merged fill, two Enter presses. Store on InjectedScript, not window.
+    // merged fill, two Enter presses.
     const existing = injectedScript._pollingRecorder as PollingRecorder | undefined;
     if (existing)
       return existing;
 
+    // Each Playwright connectOverCDP client creates its own InjectedScript in
+    // the same MAIN-world document. The per-InjectedScript singleton above
+    // does not help. Recorder is only extended in MAIN world, so a document
+    // flag is world-safe (isolated-world expandos are not shared). A new
+    // document gets a new flag and new listeners.
+    const doc = injectedScript.document as Document & { __pwPollingRecorder?: PollingRecorder };
+    if (doc.__pwPollingRecorder) {
+      injectedScript._pollingRecorder = doc.__pwPollingRecorder;
+      return doc.__pwPollingRecorder;
+    }
+
     this._recorder = new Recorder(injectedScript, options);
     this._embedder = injectedScript.window as any;
     injectedScript._pollingRecorder = this;
+    doc.__pwPollingRecorder = this;
 
     injectedScript.onGlobalListenersRemoved.add(() => this._recorder.installListeners());
 

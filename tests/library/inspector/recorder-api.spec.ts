@@ -142,6 +142,19 @@ test('should not double-record click after goBack', async ({ context }) => {
   expect(log.action('click')).toHaveLength(2);
 });
 
+test('should record one click after concurrent enableRecorder', async ({ context }) => {
+  const log = new RecorderLog();
+  await Promise.all([
+    (context as any)._enableRecorder({ mode: 'recording', recorderMode: 'api' }, log),
+    (context as any)._enableRecorder({ mode: 'recording', recorderMode: 'api' }, log),
+    (context as any)._enableRecorder({ mode: 'recording', recorderMode: 'api' }, log),
+  ]);
+  const page = await context.newPage();
+  await page.setContent(`<button>Submit</button>`);
+  await page.getByRole('button', { name: 'Submit' }).click();
+  expect(log.action('click')).toHaveLength(1);
+});
+
 test('should disable recorder', async ({ context }) => {
   const log = await startRecording(context);
   const page = await context.newPage();

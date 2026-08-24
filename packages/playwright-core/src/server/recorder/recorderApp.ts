@@ -178,21 +178,22 @@ export class RecorderApp {
   static async show(context: BrowserContext, params: channels.BrowserContextEnableRecorderParams) {
     if (process.env.PW_CODEGEN_NO_INSPECTOR)
       return;
-    const existingRecorder = await Recorder.existingForContext(context);
-    const recorder = await Recorder.forContext(context, params);
     if (params.recorderMode === 'api') {
-      // Re-enabling after disableRecorder(): the cached recorder still has the
-      // ProgrammaticRecorderApp listeners attached but its mode was set to
-      // 'none'. Restore the requested mode instead of attaching duplicate
-      // listeners (which would double every recorded action event).
-      if (existingRecorder) {
-        existingRecorder.setMode(params.mode || 'recording');
-        return;
+      // Attach ProgrammaticRecorderApp once per context. Check+set is
+      // synchronous so concurrent enableRecorder() calls cannot each run().
+      // Re-enable after disableRecorder() only restores mode.
+      const first = !(context as any)[programmaticRecorderSymbol];
+      if (first)
+        (context as any)[programmaticRecorderSymbol] = true;
+      const recorder = await Recorder.forContext(context, params);
+      if (first) {
+        const browserName = context._browser.options.name;
+        await ProgrammaticRecorderApp.run(context, recorder, browserName, params);
       }
-      const browserName = context._browser.options.name;
-      await ProgrammaticRecorderApp.run(context, recorder, browserName, params);
+      recorder.setMode(params.mode || 'recording');
       return;
     }
+    const recorder = await Recorder.forContext(context, params);
     await RecorderApp._show(recorder, context, params);
   }
 
@@ -414,3 +415,4 @@ function createRecorderFrontend(page: Page): RecorderFrontend {
 }
 
 const recorderAppSymbol = Symbol('recorderApp');
+const programmaticRecorderSymbol = Symbol('programmaticRecorder');
