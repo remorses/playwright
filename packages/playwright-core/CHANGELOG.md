@@ -1,5 +1,15 @@
 # @xmorse/playwright-core
 
+## 1.59.12
+
+1. **Fixed recorder writing the same click two or three times** — each Playwright CDP client used to inject its own document click listener, so two attached sessions (or a leftover enable from a previous recording) turned one user click into duplicate `action` events. The injected recorder is now a single instance per document, and `enableRecorder()` attaches its server listener once even when called concurrently.
+
+   ```bash
+   playwriter recorder events -r 66 --type action | jq -r '[.id, .t, .code] | @tsv'
+   ```
+
+2. **Updated runtime dependencies to patched releases** — removed vulnerable HTML formatting dependencies while preserving readable clean-HTML output.
+
 ## 1.59.11
 
 1. **Faster API-mode recorder** — the injected recorder no longer walks the full page ARIA tree on every click, fill, or keypress. Those walks ran twice inside the click handler and blocked the tab for 500–700ms per click. Playwriter already captures a snapshot after the action, so the injected trees were unused. Typing reuses the focused-element locator.
