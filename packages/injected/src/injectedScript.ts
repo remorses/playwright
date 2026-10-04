@@ -953,7 +953,26 @@ export class InjectedScript {
     input.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
+  // Playwriter: the extension toolbar (light-DOM host, closed shadow root) goes
+  // pointer-events:none while its host has data-playwriter-agent. Set it before
+  // every hit-target check so agent clicks reach the page under the toolbar.
+  // Removed after 1s so the user can click the toolbar again.
+  private _playwriterToolbarTimer: number | undefined;
+  private _markPlaywriterToolbarForAgent() {
+    const toolbars = this.document.querySelectorAll('[data-playwriter-toolbar]');
+    if (!toolbars.length)
+      return;
+    for (const toolbar of toolbars)
+      toolbar.setAttribute('data-playwriter-agent', '');
+    this.window.clearTimeout(this._playwriterToolbarTimer);
+    this._playwriterToolbarTimer = this.window.setTimeout(() => {
+      for (const toolbar of this.document.querySelectorAll('[data-playwriter-toolbar]'))
+        toolbar.removeAttribute('data-playwriter-agent');
+    }, 1000);
+  }
+
   expectHitTarget(hitPoint: { x: number, y: number }, targetElement: Element) {
+    this._markPlaywriterToolbarForAgent();
     const roots: (Document | ShadowRoot)[] = [];
 
     // Get all component roots leading to the target element.
