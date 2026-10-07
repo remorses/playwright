@@ -1,5 +1,9 @@
 # @xmorse/playwright-core
 
+## 1.59.13
+
+1. **Agent clicks pass through the Playwriter toolbar** — before each actionability hit-target check, the fork sets `data-playwriter-agent` on the in-page toolbar host. The toolbar goes click-through while the attribute is set, so `locator.click()`, `hover()`, `tap()` and `dragTo()` reach the page element under it instead of failing with `<div data-playwriter-toolbar> intercepts pointer events`. The attribute is removed 1 second later. Fixes [playwriter#126](https://github.com/remorses/playwriter/issues/126).
+
 ## 1.59.12
 
 1. **Fixed recorder writing the same click two or three times** — each Playwright CDP client used to inject its own document click listener, so two attached sessions (or a leftover enable from a previous recording) turned one user click into duplicate `action` events. The injected recorder is now a single instance per document, and `enableRecorder()` attaches its server listener once even when called concurrently.
