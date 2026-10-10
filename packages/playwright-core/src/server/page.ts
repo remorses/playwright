@@ -976,8 +976,11 @@ export class PageBinding {
     try {
       assert(context.world);
       const binding = page.getBinding(name);
+      // Playwriter: every CDP client on the tab gets Runtime.bindingCalled for the shared
+      // binding. Only the client that exposed the function answers, otherwise the others
+      // reject the page call with "not exposed" before the owner resolves it.
       if (!binding)
-        throw new Error(`Function "${name}" is not exposed`);
+        return;
       let result: any;
       if (binding.needsHandle) {
         const handle = await context.evaluateExpressionHandle(`arg => globalThis['${PageBinding.kController}'].takeBindingHandle(arg)`, { isFunction: true }, { name, seq }).catch(e => null);
