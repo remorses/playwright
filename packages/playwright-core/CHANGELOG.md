@@ -1,5 +1,9 @@
 # @xmorse/playwright-core
 
+## 1.59.14
+
+1. **Fixed `Function "x" is not exposed` errors with many CDP clients on one tab** — every client on a shared tab received the binding call, and clients that did not expose the function rejected it before the owner answered. Now only the client that exposed the binding answers, so `exposeFunction` and the Playwriter recorder work with several sessions open.
+
 ## 1.59.13
 
 1. **Agent clicks pass through the Playwriter toolbar** — before each actionability hit-target check, the fork sets `data-playwriter-agent` on the in-page toolbar host. The toolbar goes click-through while the attribute is set, so `locator.click()`, `hover()`, `tap()` and `dragTo()` reach the page element under it instead of failing with `<div data-playwriter-toolbar> intercepts pointer events`. The attribute is removed 1 second later. Fixes [playwriter#126](https://github.com/remorses/playwriter/issues/126).
