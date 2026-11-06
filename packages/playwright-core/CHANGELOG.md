@@ -1,5 +1,19 @@
 # @xmorse/playwright-core
 
+## 1.59.15
+
+1. **New `browserType.runWithAbortSignal(signal, callback)`** — cancel every Playwright call a block of code makes when a signal aborts:
+
+   ```ts
+   const controller = new AbortController()
+   setTimeout(() => controller.abort(), 5000)
+   await chromium.runWithAbortSignal(controller.signal, async () => {
+     await page.click('#late-button')
+   })
+   ```
+
+   Calls from awaits and timers started inside `callback` inherit the signal. Calls and event waits already running are rejected with an `AbortError`, and with an in-process browser the server operation is cancelled, so a pending click does not happen later. Route handlers registered inside `callback` are not affected.
+
 ## 1.59.14
 
 1. **Fixed `Function "x" is not exposed` errors with many CDP clients on one tab** — every client on a shared tab received the binding call, and clients that did not expose the function rejected it before the owner answered. Now only the client that exposed the binding answers, so `exposeFunction` and the Playwriter recorder work with several sessions open.
