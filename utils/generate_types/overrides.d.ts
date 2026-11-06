@@ -235,6 +235,7 @@ export interface BrowserType<Unused = {}> {
    * @deprecated
    */
   connect(options: ConnectOptions & { wsEndpoint?: string }): Promise<Browser>;
+  runWithAbortSignal<R>(signal: AbortSignal, callback: () => R): R;
 }
 
 export interface CDPSession {

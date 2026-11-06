@@ -15248,6 +15248,21 @@ export interface BrowserType<Unused = {}> {
    */
   connect(options: ConnectOptions & { wsEndpoint?: string }): Promise<Browser>;
   /**
+   * Runs
+   * [`callback`](https://playwright.dev/docs/api/class-browsertype#browser-type-run-with-abort-signal-option-callback)
+   * so that every Playwright call it makes, including calls from awaits and timers it starts, is rejected with an
+   * `AbortError` once
+   * [`signal`](https://playwright.dev/docs/api/class-browsertype#browser-type-run-with-abort-signal-option-signal)
+   * aborts. Calls already running are rejected too, and with an in-process browser they are cancelled, so a pending
+   * click does not happen later. Route handlers registered inside
+   * [`callback`](https://playwright.dev/docs/api/class-browsertype#browser-type-run-with-abort-signal-option-callback)
+   * are not affected. Returns the result of
+   * [`callback`](https://playwright.dev/docs/api/class-browsertype#browser-type-run-with-abort-signal-option-callback).
+   * @param signal An `AbortSignal`.
+   * @param callback Function to run.
+   */
+  runWithAbortSignal<R>(signal: AbortSignal, callback: () => R): R;
+  /**
    * A path where Playwright expects to find a bundled browser executable.
    */
   executablePath(): string;

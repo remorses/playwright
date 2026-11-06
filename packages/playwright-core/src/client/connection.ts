@@ -26,7 +26,7 @@ import { createInstrumentation } from './clientInstrumentation';
 import { Dialog } from './dialog';
 import { Electron, ElectronApplication } from './electron';
 import { ElementHandle } from './elementHandle';
-import { TargetClosedError, parseError } from './errors';
+import { TargetClosedError, abortError, parseError } from './errors';
 import { APIRequestContext } from './fetch';
 import { Frame } from './frame';
 import { JSHandle } from './jsHandle';
@@ -66,7 +66,8 @@ class DummyChannelOwner extends ChannelOwner {
 
 export class Connection extends EventEmitter {
   readonly _objects = new Map<string, ChannelOwner>();
-  onmessage = (message: object): void => {};
+  // The signal is only read by in-process servers, to cancel the call when it aborts.
+  onmessage = (message: object, signal?: AbortSignal): void => {};
   private _lastId = 0;
   private _callbacks = new Map<number, { resolve: (a: any) => void, reject: (a: Error) => void, title: string | undefined, type: string, method: string }>();
   private _rootObject: Root;
@@ -129,6 +130,9 @@ export class Connection extends EventEmitter {
       throw this._closedError;
     if (object._wasCollected)
       throw new Error('The object has been collected to prevent unbounded heap growth.');
+    const signal = this._platform.zones.current().signal();
+    if (signal?.aborted)
+      throw abortError(signal);
 
     const guid = object._guid;
     const type = object._type;
@@ -144,8 +148,32 @@ export class Connection extends EventEmitter {
       this._localUtils?.addStackToTracingNoReply({ callData: { stack: options.frames ?? [], id } }).catch(() => {});
     // We need to exit zones before calling into the server, otherwise
     // when we receive events from the server, we would be in an API zone.
-    this._platform.zones.empty.run(() => this.onmessage({ ...message, metadata }));
-    return await new Promise((resolve, reject) => this._callbacks.set(id, { resolve, reject, title: options.title, type, method }));
+    this._platform.zones.empty.run(() => this.onmessage({ ...message, metadata }, signal));
+    return await new Promise((resolve, reject) => {
+      if (!signal) {
+        this._callbacks.set(id, { resolve, reject, title: options.title, type, method });
+        return;
+      }
+      const onAbort = () => {
+        // Keep a no-op callback so the late server response is ignored.
+        this._callbacks.set(id, { resolve: () => {}, reject: () => {}, title: options.title, type, method });
+        reject(abortError(signal));
+      };
+      signal.addEventListener('abort', onAbort, { once: true });
+      this._callbacks.set(id, {
+        resolve: result => {
+          signal.removeEventListener('abort', onAbort);
+          resolve(result);
+        },
+        reject: error => {
+          signal.removeEventListener('abort', onAbort);
+          reject(error);
+        },
+        title: options.title,
+        type,
+        method,
+      });
+    });
   }
 
   private _validatorFromWireContext(): ValidatorContext {

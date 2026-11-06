@@ -100,13 +100,18 @@ export class Dispatcher<Type extends SdkObject, ChannelType, ParentScopeType ext
     this.connection.sendAdopt(this, child);
   }
 
-  async _runCommand(callMetadata: CallMetadata, method: string, validParams: any) {
+  async _runCommand(callMetadata: CallMetadata, method: string, validParams: any, signal?: AbortSignal) {
+    if (signal?.aborted)
+      throw new Error('The operation was aborted');
     const controller = ProgressController.createForSdkObject(this._object, callMetadata);
+    const onAbort = () => void controller.abort(new Error('The operation was aborted'));
+    signal?.addEventListener('abort', onAbort, { once: true });
     this._activeProgressControllers.add(controller);
     try {
       return await controller.run(progress => (this as any)[method](validParams, progress), validParams?.timeout);
     } finally {
       this._activeProgressControllers.delete(controller);
+      signal?.removeEventListener('abort', onAbort);
     }
   }
 
@@ -296,7 +301,8 @@ export class DispatcherConnection {
     }
   }
 
-  async dispatch(message: object) {
+  /** `signal` comes from in-process clients only: aborting it cancels the call. */
+  async dispatch(message: object, signal?: AbortSignal) {
     const { id, guid, method, params, metadata } = message as any;
     const dispatcher = this._dispatcherByGuid.get(guid);
     if (!dispatcher) {
@@ -376,7 +382,7 @@ export class DispatcherConnection {
       // If the dispatcher has been disposed while running the instrumentation call, error out.
       if (this._dispatcherByGuid.get(guid) !== dispatcher)
         throw new TargetClosedError(sdkObject.closeReason());
-      const result = await dispatcher._runCommand(callMetadata, method, validParams);
+      const result = await dispatcher._runCommand(callMetadata, method, validParams, signal);
       const validator = findValidator(dispatcher._type, method, 'Result');
       response.result = validator(result, '', this._validatorToWireContext());
       callMetadata.result = result;

@@ -823,7 +823,8 @@ export class RouteHandler {
     this._times = times;
     this.url = url;
     this.handler = handler;
-    this._savedZone = platform.zones.current().pop();
+    // Routes outlive the code that registered them, so they never inherit its abort signal.
+    this._savedZone = platform.zones.current().pop().withSignal(undefined);
   }
 
   static prepareInterceptionPatterns(handlers: RouteHandler[]) {

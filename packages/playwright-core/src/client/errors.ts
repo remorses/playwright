@@ -32,6 +32,13 @@ export class TargetClosedError extends Error {
   }
 }
 
+// A fresh error per call: callers rewrite the message, so the shared signal.reason must not be thrown.
+export function abortError(signal: AbortSignal): Error {
+  const error = new Error(signal.reason instanceof Error ? signal.reason.message : 'The operation was aborted');
+  error.name = 'AbortError';
+  return error;
+}
+
 export function isTargetClosedError(error: Error) {
   return error instanceof TargetClosedError;
 }

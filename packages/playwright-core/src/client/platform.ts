@@ -27,6 +27,8 @@ export type Zone = {
   pop(): Zone;
   run<R>(func: () => R): R;
   data<T>(): T | undefined;
+  withSignal(signal: AbortSignal | undefined): Zone;
+  signal(): AbortSignal | undefined;
 };
 
 const noopZone: Zone = {
@@ -34,6 +36,8 @@ const noopZone: Zone = {
   pop: () => noopZone,
   run: func => func(),
   data: () => undefined,
+  withSignal: () => noopZone,
+  signal: () => undefined,
 };
 
 export type Platform = {

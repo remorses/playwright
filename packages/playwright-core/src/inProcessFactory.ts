@@ -31,7 +31,7 @@ export function createInProcessPlaywright(): PlaywrightAPI {
 
   // Dispatch synchronously at first.
   dispatcherConnection.onmessage = message => clientConnection.dispatch(message);
-  clientConnection.onmessage = message => dispatcherConnection.dispatch(message);
+  clientConnection.onmessage = (message, signal) => dispatcherConnection.dispatch(message, signal);
 
   const rootScope = new RootDispatcher(dispatcherConnection);
 
@@ -45,7 +45,7 @@ export function createInProcessPlaywright(): PlaywrightAPI {
 
   // Switch to async dispatch after we got Playwright object.
   dispatcherConnection.onmessage = message => setImmediate(() => clientConnection.dispatch(message));
-  clientConnection.onmessage = message => setImmediate(() => dispatcherConnection.dispatch(message));
+  clientConnection.onmessage = (message, signal) => setImmediate(() => dispatcherConnection.dispatch(message, signal));
 
   clientConnection.toImpl = x => {
     if (x instanceof Connection)

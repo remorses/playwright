@@ -16,7 +16,7 @@
 
 import { AsyncLocalStorage } from 'async_hooks';
 
-export type ZoneType = 'apiZone' | 'stepZone';
+export type ZoneType = 'apiZone' | 'stepZone' | 'abortSignal';
 
 const asyncLocalStorage = new AsyncLocalStorage<Zone | undefined>();
 

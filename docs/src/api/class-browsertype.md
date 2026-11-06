@@ -435,3 +435,25 @@ use an unguessable token when using this option.
 - returns: <[string]>
 
 Returns browser name. For example: `'chromium'`, `'webkit'` or `'firefox'`.
+
+## method: BrowserType.runWithAbortSignal
+* since: v1.59
+* langs: js
+- returns: <[any]>
+
+Runs [`param: callback`] so that every Playwright call it makes, including calls from awaits and timers it starts,
+is rejected with an `AbortError` once [`param: signal`] aborts. Calls already running are rejected too, and with an
+in-process browser they are cancelled, so a pending click does not happen later. Route handlers registered inside
+[`param: callback`] are not affected. Returns the result of [`param: callback`].
+
+### param: BrowserType.runWithAbortSignal.signal
+* since: v1.59
+- `signal` <[Object]>
+
+An `AbortSignal`.
+
+### param: BrowserType.runWithAbortSignal.callback
+* since: v1.59
+- `callback` <[function]>
+
+Function to run.

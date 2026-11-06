@@ -63,6 +63,10 @@ export class BrowserType extends ChannelOwner<channels.BrowserTypeChannel> imple
     return this._initializer.name;
   }
 
+  runWithAbortSignal<R>(signal: AbortSignal, callback: () => R): R {
+    return this._platform.zones.current().withSignal(signal).run(callback);
+  }
+
   async launch(options: LaunchOptions = {}): Promise<Browser> {
     assert(!(options as any).userDataDir, 'userDataDir option is not supported in `browserType.launch`. Use `browserType.launchPersistentContext` instead');
     assert(!(options as any).port, 'Cannot specify a port without launching as a server.');

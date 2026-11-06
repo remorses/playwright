@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { TimeoutError } from './errors';
+import { TimeoutError, abortError } from './errors';
 import { rewriteErrorMessage } from '../utils/isomorphic/stackTrace';
 
 import type { ChannelOwner } from './channelOwner';
@@ -37,12 +37,22 @@ export class Waiter {
     this._channelOwner = channelOwner;
     this._savedZone = channelOwner._platform.zones.current().pop();
 
-    this._channelOwner._channel.waitForEventInfo({ info: { waitId: this._waitId, phase: 'before', event } }).catch(() => {});
+    this._withoutSignal(() => this._channelOwner._channel.waitForEventInfo({ info: { waitId: this._waitId, phase: 'before', event } })).catch(() => {});
     this._dispose = [
-      () => this._channelOwner._wrapApiCall(async () => {
+      () => this._withoutSignal(() => this._channelOwner._wrapApiCall(async () => {
         await this._channelOwner._channel.waitForEventInfo({ info: { waitId: this._waitId, phase: 'after', error: this._error } });
-      }, { internal: true }).catch(() => {}),
+      }, { internal: true })).catch(() => {}),
     ];
+    const signal = channelOwner._platform.zones.current().signal();
+    if (signal) {
+      const { promise, dispose } = waitForAbort(signal);
+      this._rejectOn(promise, dispose);
+    }
+  }
+
+  // Wait bookkeeping must reach the server even after the abort signal fires, or the server keeps the wait forever.
+  private _withoutSignal<T>(func: () => T): T {
+    return this._channelOwner._platform.zones.current().withSignal(undefined).run(func);
   }
 
   static createForEvent(channelOwner: ChannelOwner<channels.EventTargetChannel>, event: string) {
@@ -95,9 +105,9 @@ export class Waiter {
 
   log(s: string) {
     this._logs.push(s);
-    this._channelOwner._wrapApiCall(async () => {
+    this._withoutSignal(() => this._channelOwner._wrapApiCall(async () => {
       await this._channelOwner._channel.waitForEventInfo({ info: { waitId: this._waitId, phase: 'log', message: s } });
-    }, { internal: true }).catch(() => {});
+    }, { internal: true })).catch(() => {});
   }
 
   private _rejectOn(promise: Promise<any>, dispose?: () => void) {
@@ -126,6 +136,21 @@ function waitForEvent<T = void>(emitter: EventEmitter, event: string, savedZone:
     emitter.addListener(event, listener);
   });
   const dispose = () => emitter.removeListener(event, listener);
+  return { promise, dispose };
+}
+
+function waitForAbort(signal: AbortSignal): { promise: Promise<void>, dispose: () => void } {
+  let onAbort: () => void;
+  const promise = new Promise<void>((resolve, reject) => {
+    onAbort = () => reject(abortError(signal));
+    if (signal.aborted)
+      onAbort();
+    else
+      signal.addEventListener('abort', onAbort, { once: true });
+  });
+  // Rejection is consumed by waitForPromise; avoid an unhandled rejection before it races.
+  promise.catch(() => {});
+  const dispose = () => signal.removeEventListener('abort', onAbort);
   return { promise, dispose };
 }
 

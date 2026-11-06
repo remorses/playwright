@@ -57,6 +57,14 @@ class NodeZone implements Zone {
   data<T>(): T | undefined {
     return this._zone.data('apiZone');
   }
+
+  withSignal(signal: AbortSignal | undefined) {
+    return new NodeZone(signal ? this._zone.with('abortSignal', signal) : this._zone.without('abortSignal'));
+  }
+
+  signal(): AbortSignal | undefined {
+    return this._zone.data('abortSignal');
+  }
 }
 
 let boxedStackPrefixes: string[] = [];
