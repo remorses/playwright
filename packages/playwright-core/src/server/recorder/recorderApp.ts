@@ -402,7 +402,10 @@ export class ProgrammaticRecorderApp {
         // Other apps receive the same object, so keep the signals of this app separate.
         const actionInContext = { ...recordedAction, signals: [...recordedAction.signals] };
         let event: 'actionAdded' | 'actionUpdated' = 'actionAdded';
-        if (shouldMergeAction(actionInContext, lastAction) || (lastAction && supersedesAction(actionInContext, lastAction))) {
+        // Playwriter: the api recorder is not buffered, so a double click arrives as a second click.
+        // Navigations are not merged here: without the buffer window they can be seconds apart.
+        const isDoubleClick = actionInContext.action.name === 'click' && !!lastAction && supersedesAction(actionInContext, lastAction);
+        if (shouldMergeAction(actionInContext, lastAction) || isDoubleClick) {
           event = 'actionUpdated';
           // Signals already reported for the superseded action still belong to this one.
           actionInContext.signals.unshift(...lastAction!.signals);
