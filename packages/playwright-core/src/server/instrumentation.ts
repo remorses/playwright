@@ -101,6 +101,8 @@ export type CallMetadata = {
   error?: SerializedError;
   result?: any;
   objectId?: string;
+  // Playwriter: last actionability failure, appended to the TimeoutError message.
+  lastActionError?: string;
 };
 
 export interface Instrumentation {

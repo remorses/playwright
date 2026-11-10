@@ -63,6 +63,7 @@ export class Frame extends ChannelOwner<channels.FrameChannel> implements api.Fr
   _childFrames = new Set<Frame>();
   _page: Page | undefined;
   readonly webmcp: WebMCP;
+  private _frameId: string;
 
   static from(frame: channels.FrameChannel): Frame {
     return (frame as any)._object;
@@ -83,6 +84,7 @@ export class Frame extends ChannelOwner<channels.FrameChannel> implements api.Fr
     this._name = initializer.name;
     this._url = initializer.url;
     this._loadStates = new Set(initializer.loadStates);
+    this._frameId = initializer.frameId;
     this._channel.on('loadstate', event => {
       if (event.add) {
         this._loadStates.add(event.add);
@@ -114,6 +116,10 @@ export class Frame extends ChannelOwner<channels.FrameChannel> implements api.Fr
 
   page(): Page {
     return this._page!;
+  }
+
+  frameId(): string {
+    return this._frameId;
   }
 
   _timeout(options?: TimeoutOptions): channels.TimeoutOptions {

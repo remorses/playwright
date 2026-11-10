@@ -111,6 +111,14 @@ export interface PageDelegate {
 
 type EmulatedSize = { screen: types.Size, viewport: types.Size };
 
+// Playwriter: event payload for the onMouseAction callback.
+export type MouseActionEvent = {
+  type: 'move' | 'down' | 'up' | 'wheel';
+  x: number;
+  y: number;
+  button: 'left' | 'right' | 'middle' | 'none';
+};
+
 type EmulatedMedia = {
   media: types.MediaType;
   colorScheme: types.ColorScheme;
@@ -203,6 +211,9 @@ export class Page extends SdkObject<PageEventMap> {
   readonly screencast: Screencast;
   _closeReason: string | undefined;
   private _customCloseHandler?: (runBeforeUnload: boolean) => Promise<void>;
+  // Playwriter: async callback invoked before each mouse action (move/down/up/wheel).
+  // Set from the client via setOnMouseAction. Server Mouse awaits this before raw dispatch.
+  _onMouseAction: ((event: MouseActionEvent) => Promise<void>) | null = null;
 
   constructor(delegate: PageDelegate, browserContext: BrowserContext) {
     super(browserContext, 'page');
@@ -343,6 +354,14 @@ export class Page extends SdkObject<PageEventMap> {
 
   opener(): Page | undefined {
     return this._opener;
+  }
+
+  targetId(): string | undefined {
+    return (this.delegate as any)._targetId;
+  }
+
+  sessionId(): string | undefined {
+    return (this.delegate as any)._mainFrameSession?._client?.sessionId?.();
   }
 
   mainFrame(): frames.Frame {
@@ -630,7 +649,9 @@ export class Page extends SdkObject<PageEventMap> {
     const contextOptions = this.browserContext._options;
     return {
       media: this._emulatedMedia.media || 'no-override',
-      colorScheme: this._emulatedMedia.colorScheme !== undefined ? this._emulatedMedia.colorScheme : contextOptions.colorScheme ?? 'light',
+      // Playwriter: default to 'no-override' so connectOverCDP keeps the user's system color scheme.
+      // Upstream defaults to 'light' because it launches fresh browsers; our fork connects to running ones.
+      colorScheme: this._emulatedMedia.colorScheme !== undefined ? this._emulatedMedia.colorScheme : contextOptions.colorScheme ?? 'no-override',
       reducedMotion: this._emulatedMedia.reducedMotion !== undefined ? this._emulatedMedia.reducedMotion : contextOptions.reducedMotion ?? 'no-preference',
       forcedColors: this._emulatedMedia.forcedColors !== undefined ? this._emulatedMedia.forcedColors : contextOptions.forcedColors ?? 'none',
       contrast: this._emulatedMedia.contrast !== undefined ? this._emulatedMedia.contrast : contextOptions.contrast ?? 'no-preference',
@@ -1082,8 +1103,11 @@ export class PageBinding extends DisposableObject {
     try {
       assert(context.world);
       const binding = page.getBinding(name);
+      // Playwriter: every CDP client on the tab gets Runtime.bindingCalled for the shared
+      // binding. Only the client that exposed the function answers, otherwise the others
+      // reject the page call with "not exposed" before the owner resolves it.
       if (!binding)
-        throw new Error(`Function "${name}" is not exposed`);
+        return;
       if (!Array.isArray(serializedArgs))
         throw new Error(`serializedArgs is not an array. This can happen when Array.prototype.toJSON is defined incorrectly`);
       const args = serializedArgs.map(a => parseEvaluationResultValue(a));

@@ -1335,6 +1335,7 @@ export interface BrowserContextChannel extends BrowserContextEventTarget, Channe
   stopRecording(params: BrowserContextStopRecordingParams, options: TimeoutOptions): Promise<BrowserContextStopRecordingResult>;
   exposeConsoleApi(params: BrowserContextExposeConsoleApiParams, options: TimeoutOptions): Promise<BrowserContextExposeConsoleApiResult>;
   newCDPSession(params: BrowserContextNewCDPSessionParams, options: TimeoutOptions): Promise<BrowserContextNewCDPSessionResult>;
+  getExistingCDPSession(params: BrowserContextGetExistingCDPSessionParams, options: TimeoutOptions): Promise<BrowserContextGetExistingCDPSessionResult>;
   createTempFiles(params: BrowserContextCreateTempFilesParams, options: TimeoutOptions): Promise<BrowserContextCreateTempFilesResult>;
   updateSubscription(params: BrowserContextUpdateSubscriptionParams, options: TimeoutOptions): Promise<BrowserContextUpdateSubscriptionResult>;
   clockFastForward(params: BrowserContextClockFastForwardParams, options: TimeoutOptions): Promise<BrowserContextClockFastForwardResult>;
@@ -1656,6 +1657,17 @@ export type BrowserContextNewCDPSessionOptions = {
   frame?: FrameChannel,
 };
 export type BrowserContextNewCDPSessionResult = {
+  session: CDPSessionChannel,
+};
+export type BrowserContextGetExistingCDPSessionParams = {
+  page?: PageChannel,
+  frame?: FrameChannel,
+};
+export type BrowserContextGetExistingCDPSessionOptions = {
+  page?: PageChannel,
+  frame?: FrameChannel,
+};
+export type BrowserContextGetExistingCDPSessionResult = {
   session: CDPSessionChannel,
 };
 export type BrowserContextCreateTempFilesParams = {
@@ -2276,6 +2288,7 @@ export interface ElectronApplicationEvents {
 export type FrameInitializer = {
   url: string,
   name: string,
+  frameId: string,
   parentFrame?: FrameChannel,
   loadStates: LifecycleEvent[],
 };
@@ -3967,6 +3980,8 @@ export type PageInitializer = {
   isClosed: boolean,
   opener?: PageChannel,
   video?: ArtifactChannel,
+  targetId?: string,
+  sessionId?: string,
 };
 export interface PageEventTarget {
   on(event: 'bindingCall', callback: (params: PageBindingCallEvent) => void): this;
@@ -3982,6 +3997,7 @@ export interface PageEventTarget {
   on(event: 'screencastFrame', callback: (params: PageScreencastFrameEvent) => void): this;
   on(event: 'webSocketRoute', callback: (params: PageWebSocketRouteEvent) => void): this;
   on(event: 'webSocket', callback: (params: PageWebSocketEvent) => void): this;
+  on(event: 'mouseActionRequest', callback: (params: PageMouseActionRequestEvent) => void): this;
   on(event: 'worker', callback: (params: PageWorkerEvent) => void): this;
 }
 export interface PageChannel extends PageEventTarget, Channel {
@@ -4045,6 +4061,8 @@ export interface PageChannel extends PageEventTarget, Channel {
   webStorageSetItem(params: PageWebStorageSetItemParams, options: TimeoutOptions): Promise<PageWebStorageSetItemResult>;
   webStorageRemoveItem(params: PageWebStorageRemoveItemParams, options: TimeoutOptions): Promise<PageWebStorageRemoveItemResult>;
   webStorageClear(params: PageWebStorageClearParams, options: TimeoutOptions): Promise<PageWebStorageClearResult>;
+  setOnMouseAction(params: PageSetOnMouseActionParams, options: TimeoutOptions): Promise<PageSetOnMouseActionResult>;
+  mouseActionDone(params: PageMouseActionDoneParams, options: TimeoutOptions): Promise<PageMouseActionDoneResult>;
 }
 export type PageBindingCallEvent = {
   binding: BindingCallChannel,
@@ -4090,6 +4108,13 @@ export type PageWebSocketRouteEvent = {
 };
 export type PageWebSocketEvent = {
   webSocket: WebSocketChannel,
+};
+export type PageMouseActionRequestEvent = {
+  id: number,
+  type: 'move' | 'down' | 'up' | 'wheel',
+  x: number,
+  y: number,
+  button: 'left' | 'right' | 'middle' | 'none',
 };
 export type PageWorkerEvent = {
   worker: WorkerChannel,
@@ -4717,6 +4742,20 @@ export type PageWebStorageClearOptions = {
 
 };
 export type PageWebStorageClearResult = void;
+export type PageSetOnMouseActionParams = {
+  enabled: boolean,
+};
+export type PageSetOnMouseActionOptions = {
+
+};
+export type PageSetOnMouseActionResult = void;
+export type PageMouseActionDoneParams = {
+  id: number,
+};
+export type PageMouseActionDoneOptions = {
+
+};
+export type PageMouseActionDoneResult = void;
 
 export interface PageEvents {
   'bindingCall': PageBindingCallEvent;
@@ -4732,6 +4771,7 @@ export interface PageEvents {
   'screencastFrame': PageScreencastFrameEvent;
   'webSocketRoute': PageWebSocketRouteEvent;
   'webSocket': PageWebSocketEvent;
+  'mouseActionRequest': PageMouseActionRequestEvent;
   'worker': PageWorkerEvent;
 }
 

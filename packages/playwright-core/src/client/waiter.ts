@@ -44,6 +44,10 @@ export class Waiter {
     this._dispose = [
       () => this._sendWaitInfo({ waitId: this._waitId, phase: 'after', error: this._error }, { internal: true }),
     ];
+    // Playwriter: event waits inside browserType.runWithAbortSignal() reject when it aborts.
+    const zoneSignal = currentZone().data<AbortSignal>('abortSignal');
+    if (zoneSignal)
+      this.rejectOnTimeout({ timeout: 0, signal: zoneSignal }, '');
   }
 
   static createForEvent(channelOwner: ChannelOwner, event: string) {

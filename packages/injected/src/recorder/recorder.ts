@@ -662,6 +662,9 @@ class RecordActionTool implements RecorderTool {
 
 class JsonRecordActionTool implements RecorderTool {
   private _recorder: Recorder;
+  // Playwriter: cache the locator of the focused editable so typing does not regenerate it per key.
+  private _focusedElement: HTMLElement | null = null;
+  private _focusedSelector: string | null = null;
 
   constructor(recorder: Recorder) {
     this._recorder = recorder;
@@ -673,7 +676,20 @@ class JsonRecordActionTool implements RecorderTool {
   }
 
   uninstall() {
+    this._focusedElement = null;
+    this._focusedSelector = null;
     this._recorder.highlight.install();
+  }
+
+  onFocus(event: Event) {
+    const element = this._recorder.deepEventTarget(event);
+    if (!this._isEditable(element)) {
+      this._focusedElement = null;
+      this._focusedSelector = null;
+      return;
+    }
+    this._focusedElement = element;
+    this._focusedSelector = this._generateSelector(element);
   }
 
   onClick(event: MouseEvent) {
@@ -689,14 +705,12 @@ class JsonRecordActionTool implements RecorderTool {
       return;
 
     const checkbox = asCheckbox(element);
-    const { ariaSnapshot, selector, ref } = this._ariaSnapshot(element);
+    const selector = this._generateSelector(element);
     if (checkbox && event.detail === 1) {
       // Interestingly, inputElement.checked is reversed inside this event handler.
       void this._recorder.recordAction({
         name: checkbox.checked ? 'check' : 'uncheck',
         selector,
-        ref,
-        ariaSnapshot,
       });
       return;
     }
@@ -704,8 +718,6 @@ class JsonRecordActionTool implements RecorderTool {
     void this._recorder.recordAction({
       name: 'click',
       selector,
-      ref,
-      ariaSnapshot,
       position: positionForEvent(event),
       button: buttonForEvent(event),
       modifiers: modifiersForEvent(event),
@@ -715,12 +727,10 @@ class JsonRecordActionTool implements RecorderTool {
 
   onContextMenu(event: MouseEvent): void {
     const element = this._recorder.deepEventTarget(event);
-    const { ariaSnapshot, selector, ref } = this._ariaSnapshot(element);
+    const selector = this._generateSelector(element);
     void this._recorder.recordAction({
       name: 'click',
       selector,
-      ref,
-      ariaSnapshot,
       position: positionForEvent(event),
       button: 'right',
       modifiers: modifiersForEvent(event),
@@ -731,13 +741,20 @@ class JsonRecordActionTool implements RecorderTool {
   onInput(event: Event) {
     const element = this._recorder.deepEventTarget(event);
 
-    const { ariaSnapshot, selector, ref } = this._ariaSnapshot(element);
+    if (element.nodeName === 'INPUT' && (element as HTMLInputElement).type.toLowerCase() === 'file') {
+      void this._recorder.recordAction({
+        name: 'setInputFiles',
+        selector: this._selectorForEditable(element),
+        files: [...((element as HTMLInputElement).files || [])].map(file => file.name),
+      });
+      return;
+    }
+
+    const selector = this._selectorForEditable(element);
     if (isRangeInput(element)) {
       void this._recorder.recordAction({
         name: 'fill',
         selector,
-        ref,
-        ariaSnapshot,
         text: element.value,
       });
       return;
@@ -751,9 +768,7 @@ class JsonRecordActionTool implements RecorderTool {
 
       void this._recorder.recordAction({
         name: 'fill',
-        ref,
         selector,
-        ariaSnapshot,
         text: element.isContentEditable ? element.innerText : (element as HTMLInputElement).value,
       });
       return;
@@ -764,8 +779,6 @@ class JsonRecordActionTool implements RecorderTool {
       void this._recorder.recordAction({
         name: 'select',
         selector,
-        ref,
-        ariaSnapshot,
         options: [...selectElement.selectedOptions].map(option => option.value),
       });
       return;
@@ -777,7 +790,7 @@ class JsonRecordActionTool implements RecorderTool {
       return;
 
     const element = this._recorder.deepEventTarget(event);
-    const { ariaSnapshot, selector, ref } = this._ariaSnapshot(element);
+    const selector = this._isEditable(element) ? this._selectorForEditable(element) : this._generateSelector(element);
 
     // Similarly to click, trigger checkbox on key event, not input.
     if (event.key === ' ') {
@@ -786,8 +799,6 @@ class JsonRecordActionTool implements RecorderTool {
         void this._recorder.recordAction({
           name: checkbox.checked ? 'uncheck' : 'check',
           selector,
-          ref,
-          ariaSnapshot,
         });
         return;
       }
@@ -796,8 +807,6 @@ class JsonRecordActionTool implements RecorderTool {
     void this._recorder.recordAction({
       name: 'press',
       selector,
-      ref,
-      ariaSnapshot,
       key: event.key,
       modifiers: modifiersForEvent(event),
     });
@@ -847,12 +856,20 @@ class JsonRecordActionTool implements RecorderTool {
     return false;
   }
 
-  private _ariaSnapshot(element: HTMLElement): { ariaSnapshot: string, selector: string, ref?: string };
-  private _ariaSnapshot(element: HTMLElement | undefined): { ariaSnapshot: string, selector?: string, ref?: string } {
-    const { ariaSnapshot, refs } = this._recorder.injectedScript.ariaSnapshotForRecorder();
-    const ref = element ? refs.get(element) : undefined;
-    const elementInfo = element ? this._recorder.injectedScript.generateSelector(element, { testIdAttributeName: this._recorder.state.testIdAttributeName }) : undefined;
-    return { ariaSnapshot, selector: elementInfo?.selector, ref };
+  // Playwriter: no full-page ARIA snapshot per action. Reuse the focused-element locator while typing.
+  private _selectorForEditable(element: HTMLElement): string {
+    if (this._focusedElement === element && this._focusedSelector)
+      return this._focusedSelector;
+    const selector = this._generateSelector(element);
+    this._focusedElement = element;
+    this._focusedSelector = selector;
+    return selector;
+  }
+
+  private _generateSelector(element: HTMLElement): string {
+    return this._recorder.injectedScript.generateSelector(element, {
+      testIdAttributeName: this._recorder.state.testIdAttributeName,
+    }).selector;
   }
 }
 
@@ -1288,8 +1305,10 @@ export class Recorder {
   };
   readonly document: Document;
   private _delegate: RecorderDelegate = {};
+  private _recorderMode: 'default' | 'api';
 
   constructor(injectedScript: InjectedScript, options?: { recorderMode?: 'default' | 'api', hideToolbar?: boolean }) {
+    this._recorderMode = options?.recorderMode ?? 'default';
     this.document = injectedScript.document;
     this.injectedScript = injectedScript;
     this.highlight = injectedScript.createHighlight();
@@ -1306,7 +1325,8 @@ export class Recorder {
     };
     this._currentTool = this._tools.none;
     this._currentTool.install?.();
-    if (injectedScript.window.top === injectedScript.window && !options?.hideToolbar) {
+    // Playwriter: API mode has no overlay toolbar, the extension shows its own recording UI.
+    if (this._recorderMode !== 'api' && injectedScript.window.top === injectedScript.window && !options?.hideToolbar) {
       this.overlay = new Overlay(this);
       this.overlay.setUIState(this.state);
     }
@@ -1345,14 +1365,17 @@ export class Recorder {
     ];
 
     this.highlight.install();
-    // some frameworks erase the DOM on hydration, this ensures it's reattached
-    let recreationInterval: number | undefined;
-    const recreate = () => {
-      this.highlight.install();
+    // Playwriter: API mode uninstalls the highlight; this loop would put it back every 500ms.
+    if (this._recorderMode !== 'api') {
+      // some frameworks erase the DOM on hydration, this ensures it's reattached
+      let recreationInterval: number | undefined;
+      const recreate = () => {
+        this.highlight.install();
+        recreationInterval = this.injectedScript.utils.builtins.setTimeout(recreate, 500);
+      };
       recreationInterval = this.injectedScript.utils.builtins.setTimeout(recreate, 500);
-    };
-    recreationInterval = this.injectedScript.utils.builtins.setTimeout(recreate, 500);
-    this._listeners.push(() => this.injectedScript.utils.builtins.clearTimeout(recreationInterval));
+      this._listeners.push(() => this.injectedScript.utils.builtins.clearTimeout(recreationInterval));
+    }
 
     this.highlight.appendChild(createSvgElement(this.document, clipPaths));
     this.overlay?.install();
@@ -1573,6 +1596,9 @@ export class Recorder {
   }
 
   private _computeAutoExpectPrecondition(action: actions.Action, autoExpect: boolean): string | undefined {
+    // Playwriter: API mode skips the full-page ARIA walk per action. Playwriter snapshots after the action.
+    if (this._recorderMode === 'api')
+      return;
     const previousSnapshot = this._lastActionAutoexpectSnapshot;
     this._lastActionAutoexpectSnapshot = this._captureAutoExpectSnapshot();
     if (!autoExpect || isAssertAction(action) || !this._lastActionAutoexpectSnapshot)

@@ -18,6 +18,7 @@ Frame:
   initializer:
     url: string
     name: string
+    frameId: string
     parentFrame: Frame?
     loadStates:
       type: array

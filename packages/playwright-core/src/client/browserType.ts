@@ -17,6 +17,7 @@
 import path from 'path';
 
 import { assert } from '@isomorphic/assert';
+import { currentZone } from '@utils/zones';
 import { headersObjectToArray } from '@isomorphic/headers';
 import { Browser } from './browser';
 import { BrowserContext, prepareBrowserContextParams } from './browserContext';
@@ -61,6 +62,10 @@ export class BrowserType extends ChannelOwner<channels.BrowserTypeChannel> imple
 
   name(): string {
     return this._initializer.name;
+  }
+
+  runWithAbortSignal<R>(signal: AbortSignal, callback: () => R): R {
+    return currentZone().with('abortSignal', signal).run(callback);
   }
 
   async launch(options: LaunchOptions = {}): Promise<Browser> {

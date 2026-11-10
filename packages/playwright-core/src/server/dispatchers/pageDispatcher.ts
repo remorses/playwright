@@ -65,6 +65,10 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
   private _locatorHandlers = new Set<number>();
   private _jsCoverageActive = false;
   private _cssCoverageActive = false;
+  // Playwriter: pending mouse action ack promises. Server awaits these while
+  // the client runs its onMouseAction callback (e.g. ghost cursor animation).
+  private _mouseActionResolvers = new Map<number, () => void>();
+  private _mouseActionId = 0;
   private _screencastClient: ScreencastClient | undefined;
   private _screencastFrameId = 0;
   private _screencastFrameAcks = new Map<number, ManualPromise<void>>();
@@ -93,7 +97,9 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
       viewportSize: page.emulatedSize()?.viewport,
       isClosed: page.isClosed(),
       opener: PageDispatcher.fromNullable(parentScope, page.opener()),
-      video: page.video ? createVideoDispatcher(parentScope, page.video) : undefined
+      video: page.video ? createVideoDispatcher(parentScope, page.video) : undefined,
+      targetId: page.targetId(),
+      sessionId: page.sessionId(),
     });
 
     this.adopt(mainFrame);
@@ -109,6 +115,7 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
     };
 
     this.addObjectListener(Page.Events.Close, () => {
+      this._clearMouseActionState();
       this._dispatchEvent('close');
       this._dispose();
     });
@@ -330,6 +337,35 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
     await this._page.mouse.apiWheel(progress, params.deltaX, params.deltaY);
   }
 
+  async setOnMouseAction(params: channels.PageSetOnMouseActionParams): Promise<void> {
+    if (params.enabled) {
+      this._page._onMouseAction = async (event) => {
+        const id = ++this._mouseActionId;
+        const promise = new Promise<void>((resolve) => {
+          this._mouseActionResolvers.set(id, resolve);
+        });
+        this._dispatchEvent('mouseActionRequest', {
+          id,
+          type: event.type,
+          x: event.x,
+          y: event.y,
+          button: event.button,
+        });
+        await promise;
+      };
+    } else {
+      this._clearMouseActionState();
+    }
+  }
+
+  async mouseActionDone(params: channels.PageMouseActionDoneParams): Promise<void> {
+    const resolve = this._mouseActionResolvers.get(params.id);
+    if (resolve) {
+      this._mouseActionResolvers.delete(params.id);
+      resolve();
+    }
+  }
+
   async touchscreenTap(params: channels.PageTouchscreenTapParams, progress: Progress): Promise<void> {
     await this._page.touchscreen.apiTap(progress, params.x, params.y);
   }
@@ -486,7 +522,19 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
     this._dispatchEvent('frameDetached', { frame: FrameDispatcher.from(this.parentScope(), frame) });
   }
 
+  // Resolve any pending mouse action acks and unset the server callback.
+  // Called on page close, dispatcher dispose, and setOnMouseAction(false).
+  private _clearMouseActionState() {
+    this._page._onMouseAction = null;
+    for (const resolve of this._mouseActionResolvers.values()) {
+      resolve();
+    }
+    this._mouseActionResolvers.clear();
+  }
+
   override _onDispose() {
+    this._clearMouseActionState();
+
     // Avoid protocol calls for the closed page.
     if (this._page.isClosedOrClosingOrCrashed())
       return;

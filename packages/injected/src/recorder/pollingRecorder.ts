@@ -31,15 +31,41 @@ interface Embedder {
   __pw_refreshOverlay(): void;
 }
 
+declare global {
+  interface Document {
+    __pwPollingRecorder?: PollingRecorder;
+  }
+}
+
 export class PollingRecorder implements RecorderDelegate {
-  private _recorder: Recorder;
-  private _embedder: Embedder;
+  // Assigned unless the constructor returns an existing instance.
+  private _recorder!: Recorder;
+  private _embedder!: Embedder;
   private _pollRecorderModeTimer: number | undefined;
   private _lastStateJSON: string | undefined;
 
   constructor(injectedScript: InjectedScript, options?: { recorderMode?: 'default' | 'api', hideToolbar?: boolean }) {
+    // Playwriter: extendInjectedScript can run again on the same InjectedScript (bfcache
+    // restore, new-document event after goBack). A second instance would add another
+    // listener set and record every click and key twice.
+    const existing = injectedScript._pollingRecorder;
+    if (existing)
+      return existing;
+
+    // Playwriter: each connectOverCDP client creates its own InjectedScript in the same
+    // MAIN-world document, so also dedupe per document. The recorder is only extended in
+    // the MAIN world, so the document expando is shared by all clients. A new document
+    // gets a new flag and new listeners.
+    const doc = injectedScript.document;
+    if (doc.__pwPollingRecorder) {
+      injectedScript._pollingRecorder = doc.__pwPollingRecorder;
+      return doc.__pwPollingRecorder;
+    }
+
     this._recorder = new Recorder(injectedScript, options);
     this._embedder = injectedScript.window as any;
+    injectedScript._pollingRecorder = this;
+    doc.__pwPollingRecorder = this;
 
     injectedScript.onGlobalListenersRemoved.add(() => this._recorder.installListeners());
 

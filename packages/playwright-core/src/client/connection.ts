@@ -18,7 +18,7 @@ import colors from 'colors/safe';
 import { rewriteErrorMessage } from '@utils/stackTrace';
 import { isUnderTest } from '@utils/debug';
 import { debugLogger } from '@utils/debugLogger';
-import { emptyZone } from '@utils/zones';
+import { currentZone, emptyZone } from '@utils/zones';
 import { ValidationError, findValidator, maybeFindValidator } from '@protocol/validator';
 import { createCallIdGenerator } from '@isomorphic/trace/traceUtils';
 import { EventEmitter } from './eventEmitter';
@@ -186,7 +186,10 @@ export class Connection extends EventEmitter {
     if (object._wasCollected)
       throw new Error('The object has been collected to prevent unbounded heap growth.');
 
-    const signal = options.signal;
+    // Playwriter: calls inside browserType.runWithAbortSignal() also abort with the zone signal.
+    // __waitInfo__ is bookkeeping that must reach the server even after an abort.
+    const zoneSignal = method === '__waitInfo__' ? undefined : currentZone().data<AbortSignal>('abortSignal');
+    const signal = options.signal && zoneSignal ? AbortSignal.any([options.signal, zoneSignal]) : options.signal ?? zoneSignal;
     if (signal?.aborted)
       throw new AbortError(undefined, { cause: signal.reason });
 

@@ -224,6 +224,9 @@ export class Mouse {
     const fromY = this._y;
     this._x = x;
     this._y = y;
+    // Playwriter: notify callback with final target position before the move loop,
+    // so the ghost cursor can animate to the destination ahead of raw dispatch.
+    await this._page._onMouseAction?.({ type: 'move', x, y, button: this._lastButton });
     for (let i = 1; i <= steps; i++) {
       const middleX = fromX + (x - fromX) * (i / steps);
       const middleY = fromY + (y - fromY) * (i / steps);
@@ -240,6 +243,7 @@ export class Mouse {
     const { button = 'left', clickCount = 1 } = options;
     this._lastButton = button;
     this._buttons.add(button);
+    await this._page._onMouseAction?.({ type: 'down', x: this._x, y: this._y, button });
     await this._raw.down(progress, this._x, this._y, this._lastButton, this._buttons, this._keyboard._modifiers(), clickCount);
   }
 
@@ -250,6 +254,7 @@ export class Mouse {
 
   async up(progress: Progress, options: { button?: types.MouseButton, clickCount?: number } = {}) {
     const { button = 'left', clickCount = 1 } = options;
+    await this._page._onMouseAction?.({ type: 'up', x: this._x, y: this._y, button });
     this._lastButton = 'none';
     this._buttons.delete(button);
     await this._raw.up(progress, this._x, this._y, button, this._buttons, this._keyboard._modifiers(), clickCount);
@@ -271,6 +276,15 @@ export class Mouse {
         if (cc < clickCount)
           await progress.wait(delay);
       }
+    } else if (this._page._onMouseAction) {
+      // When mouse action callback is enabled, serialize move→down→up so the
+      // callback fires in correct order (e.g. ghost cursor animates to target
+      // before the click visual feedback).
+      await this.move(progress, x, y, { forClick: true, steps });
+      for (let cc = 1; cc <= clickCount; ++cc) {
+        await this.down(progress, { ...options, clickCount: cc });
+        await this.up(progress, { ...options, clickCount: cc });
+      }
     } else {
       progress.setAllowConcurrentOrNestedRaces(true);
       const promises = [];
@@ -290,6 +304,7 @@ export class Mouse {
 
   async apiWheel(progress: Progress, deltaX: number, deltaY: number) {
     await this._page.instrumentation.onBeforeInputAction(progress, this._page);
+    await this._page._onMouseAction?.({ type: 'wheel', x: this._x, y: this._y, button: this._lastButton });
     await this._raw.wheel(progress, this._x, this._y, this._buttons, this._keyboard._modifiers(), deltaX, deltaY);
   }
 }

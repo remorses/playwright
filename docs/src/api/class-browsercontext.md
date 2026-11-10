@@ -1005,6 +1005,19 @@ The [origin] to grant permissions to, e.g. "https://example.com".
 
 Indicates that the browser context is in the process of closing or has already been closed.
 
+## async method: BrowserContext.getExistingCDPSession
+* since: v1.59
+* langs: js
+- returns: <[CDPSession]>
+
+Returns a CDPSession wrapping the page's already-existing internal session.
+
+### param: BrowserContext.getExistingCDPSession.page
+* since: v1.59
+- `page` <[Page]|[Frame]>
+
+Page or frame to get the session for.
+
 ## async method: BrowserContext.newCDPSession
 * since: v1.11
 - returns: <[CDPSession]>

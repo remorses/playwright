@@ -995,6 +995,10 @@ export class Frame extends SdkObject<FrameEventMap> {
     return this._url;
   }
 
+  frameId(): string {
+    return this._id;
+  }
+
   origin(): string | undefined {
     if (!this._url.startsWith('http'))
       return;
@@ -1838,7 +1842,17 @@ export class Frame extends SdkObject<FrameEventMap> {
   }
 
   async extendInjectedScript(source: string, arg?: any) {
-    const context = await this.context('main');
+    // Playwriter: bound the wait for the main world, it can never appear (OOPIF, empty target).
+    // Callers already catch; a later navigation retries the install.
+    const context = this.existingContext('main') ?? await Promise.race([
+      this.context('main'),
+      new Promise<null>(resolve => {
+        const timer = setTimeout(() => resolve(null), 1000);
+        timer.unref?.();
+      }),
+    ]);
+    if (!context)
+      throw new Error('Frame does not yet have a main execution context');
     const injectedScriptHandle = await context.injectedScript();
     await injectedScriptHandle.evaluate((injectedScript, { source, arg }) => {
       injectedScript.extend(source, arg);

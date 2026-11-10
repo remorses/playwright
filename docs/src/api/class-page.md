@@ -4708,6 +4708,27 @@ Optional handler function to route the request.
 
 Optional handler function to route the request.
 
+## method: Page.targetId
+* since: v1.59
+* langs: js
+- returns: <[string]|[undefined]>
+
+Returns the CDP target ID for this page, if connected via CDP. Only available for Chromium.
+
+## method: Page.sessionId
+* since: v1.59
+* langs: js
+- returns: <[string]|[undefined]>
+
+Returns the CDP session ID for this page's main frame, if connected via CDP. Only available for Chromium.
+
+## property: Page.onMouseAction
+* since: v1.59
+* langs: js
+- type: <[null]|[function]\([MouseActionEvent]\):[Promise]<[void]>>
+
+When set, this callback is invoked before each mouse action (move, down, up, wheel).
+
 ## method: Page.url
 * since: v1.8
 - returns: <[string]>

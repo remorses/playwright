@@ -16,7 +16,8 @@
 
 import { AsyncLocalStorage } from 'async_hooks';
 
-export type ZoneType = 'apiZone' | 'stepZone';
+// Playwriter: 'abortSignal' holds the signal of browserType.runWithAbortSignal().
+export type ZoneType = 'apiZone' | 'stepZone' | 'abortSignal';
 
 const asyncLocalStorage = new AsyncLocalStorage<Zone | undefined>();
 

@@ -252,6 +252,14 @@ BrowserContext:
       returns:
         session: CDPSession
 
+    getExistingCDPSession:
+      title: Get existing CDP session
+      parameters:
+        page: Page?
+        frame: Frame?
+      returns:
+        session: CDPSession
+
     createTempFiles:
       internal: true
       parameters:

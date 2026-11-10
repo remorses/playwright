@@ -4699,6 +4699,11 @@ export interface Page {
   }): Promise<Array<string>>;
 
   /**
+   * Returns the CDP session ID for this page's main frame, if connected via CDP. Only available for Chromium.
+   */
+  sessionId(): string|undefined;
+
+  /**
    * **NOTE** Use locator-based
    * [locator.setChecked(checked[, options])](https://playwright.dev/docs/api/class-locator#locator-set-checked)
    * instead. Read more about [locators](https://playwright.dev/docs/locators).
@@ -5092,6 +5097,11 @@ export interface Page {
      */
     trial?: boolean;
   }): Promise<void>;
+
+  /**
+   * Returns the CDP target ID for this page, if connected via CDP. Only available for Chromium.
+   */
+  targetId(): string|undefined;
 
   /**
    * **NOTE** Use locator-based
@@ -5859,6 +5869,11 @@ export interface Page {
   localStorage: WebStorage;
 
   mouse: Mouse;
+
+  /**
+   * When set, this callback is invoked before each mouse action (move, down, up, wheel).
+   */
+  onMouseAction: null|((mouseactionevent: MouseActionEvent) => Promise<void>);
 
   /**
    * API testing helper associated with this page. This method returns the same instance as
@@ -7379,6 +7394,11 @@ export interface Frame {
    *
    */
   frameElement(): Promise<ElementHandle>;
+
+  /**
+   * Returns the frame's CDP frame ID.
+   */
+  frameId(): string;
 
   /**
    * When working with iframes, you can create a frame locator that will enter the iframe and allow selecting elements
@@ -10332,6 +10352,12 @@ export interface BrowserContext {
    * @param callback Callback function that will be called in the Playwright's context.
    */
   exposeFunction(name: string, callback: Function): Promise<Disposable>;
+
+  /**
+   * Returns a CDPSession wrapping the page's already-existing internal session.
+   * @param page Page or frame to get the session for.
+   */
+  getExistingCDPSession(page: Page|Frame): Promise<CDPSession>;
 
   /**
    * Grants specified permissions to the browser context. Only grants corresponding permissions to the given origin if
@@ -16860,6 +16886,11 @@ export interface Locator {
   }): Promise<Array<string>>;
 
   /**
+   * Returns the selector string this locator was created with.
+   */
+  selector(): string;
+
+  /**
    * This method waits for [actionability](https://playwright.dev/docs/actionability) checks, then focuses the element and selects all its
    * text content.
    *
@@ -17565,6 +17596,21 @@ export interface BrowserType<Unused = {}> {
    * @param options
    */
   connect(options: ConnectOptions & { wsEndpoint?: string }): Promise<Browser>;
+  /**
+   * Runs
+   * [`callback`](https://playwright.dev/docs/api/class-browsertype#browser-type-run-with-abort-signal-option-callback)
+   * so that every Playwright call it makes, including calls from awaits and timers it starts, is rejected with an
+   * `AbortError` once
+   * [`signal`](https://playwright.dev/docs/api/class-browsertype#browser-type-run-with-abort-signal-option-signal)
+   * aborts. Calls already running are rejected too, and with an in-process browser they are cancelled, so a pending
+   * click does not happen later. Route handlers registered inside
+   * [`callback`](https://playwright.dev/docs/api/class-browsertype#browser-type-run-with-abort-signal-option-callback)
+   * are not affected. Returns the result of
+   * [`callback`](https://playwright.dev/docs/api/class-browsertype#browser-type-run-with-abort-signal-option-callback).
+   * @param signal An `AbortSignal`.
+   * @param callback Function to run.
+   */
+  runWithAbortSignal<R>(signal: AbortSignal, callback: () => R): R;
   /**
    * A path where Playwright expects to find a bundled browser executable.
    */
@@ -19447,6 +19493,13 @@ export type AndroidKey =
 
 export const _electron: Electron;
 export const _android: Android;
+
+export type MouseActionEvent = {
+  type: 'move' | 'down' | 'up' | 'wheel';
+  x: number;
+  y: number;
+  button: 'left' | 'right' | 'middle' | 'none';
+};
 
 // This is required to not export everything by default. See https://github.com/Microsoft/TypeScript/issues/19545#issuecomment-340490459
 export {};

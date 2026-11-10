@@ -912,6 +912,13 @@ scheme.BrowserContextNewCDPSessionParams = tObject({
 scheme.BrowserContextNewCDPSessionResult = tObject({
   session: tChannel(['CDPSession']),
 });
+scheme.BrowserContextGetExistingCDPSessionParams = tObject({
+  page: tOptional(tChannel(['Page'])),
+  frame: tOptional(tChannel(['Frame'])),
+});
+scheme.BrowserContextGetExistingCDPSessionResult = tObject({
+  session: tChannel(['CDPSession']),
+});
 scheme.BrowserContextCreateTempFilesParams = tObject({
   rootDirName: tOptional(tString),
   items: tArray(tObject({
@@ -1248,6 +1255,7 @@ scheme.ElectronApplicationUpdateSubscriptionResult = tOptional(tObject({}));
 scheme.FrameInitializer = tObject({
   url: tString,
   name: tString,
+  frameId: tString,
   parentFrame: tOptional(tChannel(['Frame'])),
   loadStates: tArray(tType('LifecycleEvent')),
 });
@@ -2297,6 +2305,8 @@ scheme.PageInitializer = tObject({
   isClosed: tBoolean,
   opener: tOptional(tChannel(['Page'])),
   video: tOptional(tChannel(['Artifact'])),
+  targetId: tOptional(tString),
+  sessionId: tOptional(tString),
 });
 scheme.PageBindingCallEvent = tObject({
   binding: tChannel(['BindingCall']),
@@ -2342,6 +2352,13 @@ scheme.PageWebSocketRouteEvent = tObject({
 });
 scheme.PageWebSocketEvent = tObject({
   webSocket: tChannel(['WebSocket']),
+});
+scheme.PageMouseActionRequestEvent = tObject({
+  id: tInt,
+  type: tEnum(['move', 'down', 'up', 'wheel']),
+  x: tFloat,
+  y: tFloat,
+  button: tEnum(['left', 'right', 'middle', 'none']),
 });
 scheme.PageWorkerEvent = tObject({
   worker: tChannel(['Worker']),
@@ -2741,6 +2758,14 @@ scheme.PageWebStorageClearParams = tObject({
   kind: tEnum(['local', 'session']),
 });
 scheme.PageWebStorageClearResult = tOptional(tObject({}));
+scheme.PageSetOnMouseActionParams = tObject({
+  enabled: tBoolean,
+});
+scheme.PageSetOnMouseActionResult = tOptional(tObject({}));
+scheme.PageMouseActionDoneParams = tObject({
+  id: tInt,
+});
+scheme.PageMouseActionDoneResult = tOptional(tObject({}));
 scheme.RootInitializer = tOptional(tObject({}));
 scheme.RootInitializeParams = tObject({
   sdkLanguage: tType('SDKLanguage'),

@@ -2439,6 +2439,13 @@ Returns the buffer with the captured screenshot.
 ### option: Locator.screenshot.style = %%-screenshot-option-style-%%
 * since: v1.41
 
+## method: Locator.selector
+* since: v1.59
+* langs: js
+- returns: <[string]>
+
+Returns the selector string this locator was created with.
+
 ## async method: Locator.scrollIntoViewIfNeeded
 * since: v1.14
 

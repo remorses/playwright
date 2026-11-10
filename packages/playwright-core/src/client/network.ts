@@ -857,7 +857,8 @@ export class RouteHandler {
     this._times = times;
     this.url = url;
     this.handler = handler;
-    this._savedZone = currentZone().without('apiZone');
+    // Playwriter: routes outlive the code that registered them, so they never inherit its abort signal.
+    this._savedZone = currentZone().without('apiZone').without('abortSignal');
     // Eagerly validate string globs so that invalid patterns throw at the call site
     // (e.g. page.route()) rather than silently aborting requests later.
     if (typeof url === 'string')

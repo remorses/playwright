@@ -220,6 +220,7 @@ export interface BrowserType<Unused = {}> {
    * @deprecated
    */
   connect(options: ConnectOptions & { wsEndpoint?: string }): Promise<Browser>;
+  runWithAbortSignal<R>(signal: AbortSignal, callback: () => R): R;
 }
 
 export interface ConnectOverCDPTransport {
@@ -395,6 +396,13 @@ export type AndroidKey =
 
 export const _electron: Electron;
 export const _android: Android;
+
+export type MouseActionEvent = {
+  type: 'move' | 'down' | 'up' | 'wheel';
+  x: number;
+  y: number;
+  button: 'left' | 'right' | 'middle' | 'none';
+};
 
 // This is required to not export everything by default. See https://github.com/Microsoft/TypeScript/issues/19545#issuecomment-340490459
 export {};

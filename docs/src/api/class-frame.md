@@ -966,6 +966,13 @@ var contentFrame = await frameElement.ContentFrameAsync();
 Console.WriteLine(frame == contentFrame); // -> True
 ```
 
+## method: Frame.frameId
+* since: v1.59
+* langs: js
+- returns: <[string]>
+
+Returns the frame's CDP frame ID.
+
 ## method: Frame.frameLocator
 * since: v1.17
 - returns: <[FrameLocator]>

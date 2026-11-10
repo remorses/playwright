@@ -106,6 +106,10 @@ export class Locator implements api.Locator {
     return this._frame.page();
   }
 
+  selector(): string {
+    return this._selector;
+  }
+
   async boundingBox(options?: TimeoutOptions): Promise<Rect | null> {
     return await this._withElement(h => h.boundingBox(), { title: 'Bounding box', timeout: options?.timeout, signal: options?.signal });
   }

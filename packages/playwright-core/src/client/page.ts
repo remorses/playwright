@@ -119,6 +119,10 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
   private _closeReason: string | undefined;
   _closeWasCalled: boolean = false;
   private _harRouters: HarRouter[] = [];
+  private _targetId: string | undefined;
+  private _sessionId: string | undefined;
+  // Playwriter: user-provided callback invoked before each mouse action.
+  private _onMouseActionCallback: ((event: MouseActionEvent) => Promise<void>) | null = null;
 
   private _locatorHandlers = new Map<number, { locator: Locator, handler: (locator: Locator) => any, times: number | undefined }>();
   private _evaluateCallbacks: { name: string, disposable: DisposableObject }[] = [];
@@ -153,6 +157,8 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
     this._closed = initializer.isClosed;
     this._opener = Page.fromNullable(initializer.opener);
     this._video = new Video(this._connection, initializer.video ? Artifact.from(initializer.video) : undefined);
+    this._targetId = initializer.targetId;
+    this._sessionId = initializer.sessionId;
     this.screencast = new Screencast(this);
 
     this._channel.on('bindingCall', ({ binding }) => this._onBinding(BindingCall.from(binding)));
@@ -173,6 +179,25 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
     this._channel.on('viewportSizeChanged', ({ viewportSize }) => this._viewportSize = viewportSize);
     this._channel.on('webSocket', ({ webSocket }) => this.emit(Events.Page.WebSocket, WebSocket.from(webSocket)));
     this._channel.on('worker', ({ worker }) => this._onWorker(Worker.from(worker)));
+    // Playwriter: handle mouse action requests from server. The server awaits our ack
+    // before dispatching the raw CDP mouse event, giving the callback (e.g. ghost cursor
+    // animation) time to complete.
+    this._channel.on('mouseActionRequest', ({ id, type, x, y, button }) => {
+      const done = () => {
+        this._channel.mouseActionDone({ id }, kNoTimeout).catch(() => {});
+      };
+      const callback = this._onMouseActionCallback;
+      if (!callback) {
+        done();
+        return;
+      }
+      // Use Promise.resolve().then() to safely handle both sync throws and
+      // async rejections — ensures ack is always sent back to the server.
+      void Promise.resolve()
+        .then(() => { return callback({ type, x, y, button }); })
+        .catch(() => {})
+        .finally(done);
+    });
 
     this.coverage = new Coverage(this._channel);
 
@@ -276,6 +301,23 @@ export class Page extends ChannelOwner<channels.PageChannel> implements api.Page
     if (!this._opener || this._opener.isClosed())
       return null;
     return this._opener;
+  }
+
+  targetId(): string | undefined {
+    return this._targetId;
+  }
+
+  sessionId(): string | undefined {
+    return this._sessionId;
+  }
+
+  set onMouseAction(callback: ((event: MouseActionEvent) => Promise<void>) | null) {
+    this._onMouseActionCallback = callback;
+    this._channel.setOnMouseAction({ enabled: callback !== null }, kNoTimeout).catch(() => {});
+  }
+
+  get onMouseAction(): ((event: MouseActionEvent) => Promise<void>) | null {
+    return this._onMouseActionCallback;
   }
 
   mainFrame(): Frame {
@@ -991,3 +1033,11 @@ export async function addInitScriptWithExposedFunctions(owner: Page | BrowserCon
     await initScriptDisposable.dispose();
   });
 }
+
+// Playwriter: event payload for the onMouseAction callback.
+export type MouseActionEvent = {
+  type: 'move' | 'down' | 'up' | 'wheel';
+  x: number;
+  y: number;
+  button: 'left' | 'right' | 'middle' | 'none';
+};
