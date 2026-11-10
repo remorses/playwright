@@ -888,6 +888,10 @@ export class Page extends SdkObject<PageEventMap> {
     return this._lifecycle !== 'open';
   }
 
+  workers(): Worker[] {
+    return [...this._workers.values()];
+  }
+
   addWorker(workerId: string, worker: Worker) {
     this._workers.set(workerId, worker);
     this.emit(Page.Events.Worker, worker);

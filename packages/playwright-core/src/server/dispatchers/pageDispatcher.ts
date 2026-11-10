@@ -134,6 +134,9 @@ export class PageDispatcher extends Dispatcher<Page, channels.PageChannel, Brows
     this.addObjectListener(Page.Events.LocatorHandlerTriggered, (uid: number) => this._dispatchEvent('locatorHandlerTriggered', { uid }));
     this.addObjectListener(Page.Events.WebSocket, webSocket => this._dispatchEvent('webSocket', { webSocket: new WebSocketDispatcher(this, webSocket) }));
     this.addObjectListener(Page.Events.Worker, worker => this._dispatchEvent('worker', { worker: new WorkerDispatcher(this, worker) }));
+    // Reconnecting over CDP can attach workers before the page dispatcher exists.
+    for (const worker of page.workers())
+      this._dispatchEvent('worker', { worker: new WorkerDispatcher(this, worker) });
     // Ensure client knows about all frames.
     const frames = page.frameManager.frames();
     for (let i = 1; i < frames.length; i++)
