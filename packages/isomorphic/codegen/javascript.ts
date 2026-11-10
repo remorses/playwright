@@ -41,6 +41,10 @@ export class JavaScriptLanguageGenerator implements LanguageGenerator {
     this._pageAliases.clear();
   }
 
+  pageAlias(pageGuid: string): string {
+    return this._pageAlias(pageGuid);
+  }
+
   private _pageAlias(pageGuid: string): string {
     let alias = this._pageAliases.get(pageGuid);
     if (!alias) {

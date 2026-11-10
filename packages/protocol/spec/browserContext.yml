@@ -449,3 +449,11 @@ BrowserContext:
         data: json
         page: Page
         code: string
+        # Playwriter: alias of the page in the generated code and the frames of the action selector.
+        frame:
+          type: object?
+          properties:
+            pageAlias: string?
+            framePath:
+              type: array
+              items: string

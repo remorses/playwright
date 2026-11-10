@@ -1420,6 +1420,10 @@ export type BrowserContextRecorderEventEvent = {
   data: any,
   page: PageChannel,
   code: string,
+  frame?: {
+    pageAlias?: string,
+    framePath: string[],
+  },
 };
 export type BrowserContextAddCookiesParams = {
   cookies: SetNetworkCookie[],

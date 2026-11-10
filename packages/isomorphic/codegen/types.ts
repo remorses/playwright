@@ -48,4 +48,6 @@ export interface LanguageGenerator {
   generateHeader(options: LanguageGeneratorOptions): string;
   generateAction(actionInContext: actions.ActionInContext, options: LanguageGeneratorOptions): string;
   generateFooter(saveStorage: string | undefined): string;
+  // Playwriter: alias the generated code uses for this page, e.g. `page1`.
+  pageAlias?(pageGuid: string): string;
 }

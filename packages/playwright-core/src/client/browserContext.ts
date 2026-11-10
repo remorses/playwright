@@ -55,10 +55,13 @@ import type { URLMatch } from '@isomorphic/urlMatch';
 import type * as channels from './channels';
 import type * as actions from '@isomorphic/codegen/actions';
 
+// Playwriter: `frame` has the page alias used in `code` and the frames of the action selector.
+type RecorderFrame = channels.BrowserContextRecorderEventEvent['frame'];
+
 interface RecorderEventSink {
-  actionAdded?(page: Page, action: actions.Action, code: string): void;
-  actionUpdated?(page: Page, action: actions.Action, code: string): void;
-  signalAdded?(page: Page, signal: actions.Signal, code: string): void;
+  actionAdded?(page: Page, action: actions.Action, code: string, frame: RecorderFrame): void;
+  actionUpdated?(page: Page, action: actions.Action, code: string, frame: RecorderFrame): void;
+  signalAdded?(page: Page, signal: actions.Signal, code: string, frame: RecorderFrame): void;
 }
 
 export class BrowserContext extends ChannelOwner<channels.BrowserContextChannel> implements api.BrowserContext {
@@ -167,13 +170,13 @@ export class BrowserContext extends ChannelOwner<channels.BrowserContextChannel>
     this._channel.on('requestFailed', ({ request, failureText, responseEndTiming, page }) => this._onRequestFailed(network.Request.from(request), responseEndTiming, failureText, Page.fromNullable(page)));
     this._channel.on('requestFinished', params => this._onRequestFinished(params));
     this._channel.on('response', ({ response, page }) => this._onResponse(network.Response.from(response), Page.fromNullable(page)));
-    this._channel.on('recorderEvent', ({ event, data, page, code }) => {
+    this._channel.on('recorderEvent', ({ event, data, page, code, frame }) => {
       if (event === 'actionAdded')
-        this._onRecorderEventSink?.actionAdded?.(Page.from(page), data as actions.Action, code);
+        this._onRecorderEventSink?.actionAdded?.(Page.from(page), data as actions.Action, code, frame);
       else if (event === 'actionUpdated')
-        this._onRecorderEventSink?.actionUpdated?.(Page.from(page), data as actions.Action, code);
+        this._onRecorderEventSink?.actionUpdated?.(Page.from(page), data as actions.Action, code, frame);
       else if (event === 'signalAdded')
-        this._onRecorderEventSink?.signalAdded?.(Page.from(page), data as actions.Signal, code);
+        this._onRecorderEventSink?.signalAdded?.(Page.from(page), data as actions.Signal, code, frame);
     });
     this._closedPromise = new Promise(f => this.once(Events.BrowserContext.Close, f));
 

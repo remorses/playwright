@@ -34,7 +34,7 @@ import { BrowserContext } from '../browserContext';
 import type { Page } from '../page';
 import type * as actions from '@isomorphic/codegen/actions';
 import type { CallLog, ElementInfo, Mode, RecorderBackend, RecorderFrontend, Source } from '@recorder/recorderTypes';
-import type { Language, LanguageGeneratorOptions } from '@isomorphic/codegen/types';
+import type { Language, LanguageGenerator, LanguageGeneratorOptions } from '@isomorphic/codegen/types';
 import type * as channels from '../channels';
 import type { Progress } from '../progress';
 import type { AriaTemplateNode } from '@isomorphic/ariaSnapshot';
@@ -353,7 +353,13 @@ export type ProgrammaticRecorderEvent = {
   data: any;
   page: Page;
   code: string;
+  frame?: { pageAlias?: string, framePath: string[] };
 };
+
+// Playwriter: frames are part of the 1.64 full selector, split them back out for recordings.
+function framePathOf(selector: string | undefined): string[] {
+  return selector?.split(' >> internal:control=enter-frame >> ').slice(0, -1) ?? [];
+}
 
 // Each client that records through the api gets its own app, so that clients
 // sharing the context only receive events of the recordings they started.
@@ -385,7 +391,7 @@ export class ProgrammaticRecorderApp {
       launchOptions: { headless: false },
       contextOptions: {},
     };
-    const languageGenerator = languages.find(l => l.id === params.language) ?? languages.find(l => l.id === 'playwright-test')!;
+    const languageGenerator: LanguageGenerator = languages.find(l => l.id === params.language) ?? languages.find(l => l.id === 'playwright-test')!;
 
     this._listeners = [
       eventsHelper.addEventListener(recorder, RecorderEvent.ActionAdded, recordedAction => {
@@ -403,7 +409,8 @@ export class ProgrammaticRecorderApp {
         lastAction = actionInContext;
         lastActionPage = page;
         const code = languageGenerator.generateAction(actionInContext, languageGeneratorOptions);
-        onEvent({ event, data: actionInContext.action, page, code });
+        const frame = { pageAlias: languageGenerator.pageAlias?.(page.guid), framePath: framePathOf((actionInContext.action as actions.ActionWithSelector).selector) };
+        onEvent({ event, data: actionInContext.action, page, code, frame });
       }),
       eventsHelper.addEventListener(recorder, RecorderEvent.SignalAdded, signalInContext => {
         const page = findPageByGuid(inspectedContext, signalInContext.pageGuid);
@@ -416,7 +423,7 @@ export class ProgrammaticRecorderApp {
           lastAction.signals.push(signalInContext.signal);
           code = languageGenerator.generateAction(lastAction, languageGeneratorOptions);
         }
-        onEvent({ event: 'signalAdded', data: signalInContext.signal, page, code });
+        onEvent({ event: 'signalAdded', data: signalInContext.signal, page, code, frame: { pageAlias: languageGenerator.pageAlias?.(page.guid), framePath: [] } });
       }),
     ];
   }

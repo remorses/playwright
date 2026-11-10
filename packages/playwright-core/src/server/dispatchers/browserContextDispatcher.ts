@@ -353,8 +353,8 @@ export class BrowserContextDispatcher extends Dispatcher<BrowserContext, channel
     if (this._recorderApp)
       throw new Error('Recording is already in progress.');
     // Recorder events only go to the connection that started the recording.
-    this._recorderApp = await progress.race(ProgrammaticRecorderApp.start(this._context, params, ({ event, data, page, code }) => {
-      this._dispatchEvent('recorderEvent', { event, data, code, page: PageDispatcher.from(this, page) });
+    this._recorderApp = await progress.race(ProgrammaticRecorderApp.start(this._context, params, ({ event, data, page, code, frame }) => {
+      this._dispatchEvent('recorderEvent', { event, data, code, page: PageDispatcher.from(this, page), frame });
     }));
   }
 
