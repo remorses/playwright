@@ -28,6 +28,7 @@ import { launchApp } from '../launchApp';
 import { nullProgress, ProgressController } from '../progress';
 import { ThrottledFile } from './throttledFile';
 import { collapseActions, shouldMergeAction } from './recorderUtils';
+import { supersedesAction } from './recorderSignalProcessor';
 import { Recorder, RecorderEvent } from '../recorder';
 import { BrowserContext } from '../browserContext';
 
@@ -401,7 +402,7 @@ export class ProgrammaticRecorderApp {
         // Other apps receive the same object, so keep the signals of this app separate.
         const actionInContext = { ...recordedAction, signals: [...recordedAction.signals] };
         let event: 'actionAdded' | 'actionUpdated' = 'actionAdded';
-        if (shouldMergeAction(actionInContext, lastAction)) {
+        if (shouldMergeAction(actionInContext, lastAction) || (lastAction && supersedesAction(actionInContext, lastAction))) {
           event = 'actionUpdated';
           // Signals already reported for the superseded action still belong to this one.
           actionInContext.signals.unshift(...lastAction!.signals);

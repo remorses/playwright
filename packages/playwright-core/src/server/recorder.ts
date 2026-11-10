@@ -131,7 +131,7 @@ export class Recorder extends EventEmitter<RecorderEventMap> implements Instrume
         if (this._enabled)
           this.emit(RecorderEvent.SignalAdded, signal);
       },
-    });
+    }, this._recorderMode !== 'api');
 
     context.on(BrowserContext.Events.BeforeClose, () => {
       this._signalProcessor.flush();

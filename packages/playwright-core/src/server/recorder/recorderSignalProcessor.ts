@@ -34,18 +34,22 @@ type BufferedSignal = { frame: Frame, signal: Signal, timestamp: number };
 
 export class RecorderSignalProcessor {
   private _delegate: ProcessorDelegate;
+  private _bufferActions: boolean;
   private _lastAction: actions.ActionInContext | null = null;
   private _lastActionTimestamp = 0;
   private _pendingAction: { actionInContext: actions.ActionInContext, receivedAt: number, signals: BufferedSignal[], timeout: NodeJS.Timeout } | undefined;
 
-  constructor(actionSink: ProcessorDelegate) {
+  // Playwriter: the api recorder reports actions live (bufferActions false); its consumer
+  // merges superseding actions itself, see supersedesAction.
+  constructor(actionSink: ProcessorDelegate, bufferActions = true) {
     this._delegate = actionSink;
+    this._bufferActions = bufferActions;
   }
 
   addAction(actionInContext: actions.ActionInContext) {
     const timestamp = monotonicTime();
     if (this._pendingAction) {
-      if (this._supersedes(actionInContext, this._pendingAction.actionInContext)) {
+      if (supersedesAction(actionInContext, this._pendingAction.actionInContext)) {
         this._pendingAction.actionInContext = actionInContext;
         this._pendingAction.receivedAt = timestamp;
         this._resetPendingTimeout();
@@ -82,22 +86,10 @@ export class RecorderSignalProcessor {
   }
 
   private _shouldBuffer(actionInContext: actions.ActionInContext): boolean {
+    if (!this._bufferActions)
+      return false;
     const action = actionInContext.action;
     return (action.name === 'click' && action.button === 'left') || action.name === 'navigate';
-  }
-
-  private _supersedes(actionInContext: actions.ActionInContext, pending: actions.ActionInContext): boolean {
-    const action = actionInContext.action;
-    const pendingAction = pending.action;
-    if (actionInContext.pageGuid !== pending.pageGuid)
-      return false;
-    // A higher click count on the same target is a double (or triple) click.
-    if (action.name === 'click' && pendingAction.name === 'click')
-      return action.selector === pendingAction.selector && action.clickCount > pendingAction.clickCount;
-    // Another navigation on the same page supersedes the previous url.
-    if (action.name === 'navigate' && pendingAction.name === 'navigate')
-      return true;
-    return false;
   }
 
   private _resetPendingTimeout() {
@@ -162,4 +154,18 @@ export class RecorderSignalProcessor {
       signal,
     });
   }
+}
+
+export function supersedesAction(actionInContext: actions.ActionInContext, pending: actions.ActionInContext): boolean {
+  const action = actionInContext.action;
+  const pendingAction = pending.action;
+  if (actionInContext.pageGuid !== pending.pageGuid)
+    return false;
+  // A higher click count on the same target is a double (or triple) click.
+  if (action.name === 'click' && pendingAction.name === 'click')
+    return action.selector === pendingAction.selector && action.clickCount > pendingAction.clickCount;
+  // Another navigation on the same page supersedes the previous url.
+  if (action.name === 'navigate' && pendingAction.name === 'navigate')
+    return true;
+  return false;
 }
