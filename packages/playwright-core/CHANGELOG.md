@@ -1,0 +1,89 @@
+# @xmorse/playwright-core
+
+## 1.59.15
+
+1. **New `browserType.runWithAbortSignal(signal, callback)`** — cancel every Playwright call a block of code makes when a signal aborts:
+
+   ```ts
+   const controller = new AbortController()
+   setTimeout(() => controller.abort(), 5000)
+   await chromium.runWithAbortSignal(controller.signal, async () => {
+     await page.click('#late-button')
+   })
+   ```
+
+   Calls from awaits and timers started inside `callback` inherit the signal. Calls and event waits already running are rejected with an `AbortError`, and with an in-process browser the server operation is cancelled, so a pending click does not happen later. Route handlers registered inside `callback` are not affected.
+
+## 1.59.14
+
+1. **Fixed `Function "x" is not exposed` errors with many CDP clients on one tab** — every client on a shared tab received the binding call, and clients that did not expose the function rejected it before the owner answered. Now only the client that exposed the binding answers, so `exposeFunction` and the Playwriter recorder work with several sessions open.
+
+## 1.59.13
+
+1. **Agent clicks pass through the Playwriter toolbar** — before each actionability hit-target check, the fork sets `data-playwriter-agent` on the in-page toolbar host. The toolbar goes click-through while the attribute is set, so `locator.click()`, `hover()`, `tap()` and `dragTo()` reach the page element under it instead of failing with `<div data-playwriter-toolbar> intercepts pointer events`. The attribute is removed 1 second later. Fixes [playwriter#126](https://github.com/remorses/playwriter/issues/126).
+
+## 1.59.12
+
+1. **Fixed recorder writing the same click two or three times** — each Playwright CDP client used to inject its own document click listener, so two attached sessions (or a leftover enable from a previous recording) turned one user click into duplicate `action` events. The injected recorder is now a single instance per document, and `enableRecorder()` attaches its server listener once even when called concurrently.
+
+   ```bash
+   playwriter recorder events -r 66 --type action | jq -r '[.id, .t, .code] | @tsv'
+   ```
+
+2. **Updated runtime dependencies to patched releases** — removed vulnerable HTML formatting dependencies while preserving readable clean-HTML output.
+
+## 1.59.11
+
+1. **Faster API-mode recorder** — the injected recorder no longer walks the full page ARIA tree on every click, fill, or keypress. Those walks ran twice inside the click handler and blocked the tab for 500–700ms per click. Playwriter already captures a snapshot after the action, so the injected trees were unused. Typing reuses the focused-element locator.
+2. **One recorder instance per window** — `extendInjectedScript` can run again after `goBack` (bfcache restore). A second `PollingRecorder` used to attach another click/keydown listener set, so one user click became two recorded clicks. There is now one instance per window.
+3. **Re-enable after `_disableRecorder()` works** — a second recording on the same context used to capture no actions because the cached server recorder stayed in mode `none`. Re-enabling now restores the requested mode without attaching duplicate listeners.
+4. **File picks are `setInputFiles` actions** — choosing files in `input[type=file]` records as a Playwright `setInputFiles` action instead of a custom event.
+5. **`extendInjectedScript` times out** — empty frames and targets that never get a document no longer hang recorder start.
+
+## 1.59.10
+
+1. **Fix CommonJS unzip startup on clean installs** — the fork now depends on `get-stream@^5.2.0`, which matches the vendored CommonJS `extract-zip.js` runtime used by `zipBundle`. This fixes `Error [ERR_REQUIRE_ESM]: require() of ES Module ... get-stream ... not supported` on clean installs and Windows startup paths like `npx playwriter serve`.
+2. **Ignore duplicate auto-close races for shared JS dialogs** — `Dialog.close()` now treats Chromium's `Protocol error (Page.handleJavaScriptDialog): {"code":-32602,"message":"No dialog is showing"}` as benign. When multiple `connectOverCDP()` clients are attached to the same Playwriter tab, the first dialog close wins and later best-effort closes no longer crash the process.
+
+## 1.59.7
+
+**Security fix** — custom `util.inspect` handler on `ChannelOwner` and channel proxies. Previously `console.log(response)` or auto-returning a Playwright object from a REPL traversed `_connection._platform.env` (= `process.env`) at depth 4 and leaked every environment variable to the terminal, including API keys and secrets. Now Playwright objects render as a concise summary like `Response@response@abc123 { url: '...', status: 200 }`.
+
+See [playwriter#82](https://github.com/remorses/playwriter/issues/82).
+
+## 1.59.6
+
+1. **Descriptive actionability errors** — `TimeoutError` messages now include the specific reason a click failed. Instead of `"Timeout 2000ms exceeded."`, errors say e.g. `"Timeout 2000ms exceeded. Element is not visible — it may be hidden by CSS, inside a collapsed <details>, inactive tab, or closed accordion. Try: interact with the page to reveal it first, or use { force: true } to skip visibility checks"` or `"Timeout 2000ms exceeded. <button name='Submit'> intercepts pointer events"`.
+2. **Added `locator.selector()`** — returns the internal selector string for a locator. Useful for cache keys, debugging, or any case where you need a stable string representation of the selector chain.
+3. **Added `page.onMouseAction`** — callback invoked before each mouse action (move, down, up, wheel) with a `MouseActionEvent` payload. Useful for intercepting and visualizing pointer activity.
+4. **Added `context.getExistingCDPSession(page)`** — reuses Playwright's internal CDP session instead of creating a new one via `Target.attachToTarget`. Critical for relay/proxy environments where `Target.attachToTarget` is intercepted.
+5. **Export `MouseActionEvent` type** — now available for TypeScript consumers.
+
+## 1.59.4
+
+- Stop forcing light mode on pages connected via `connectOverCDP`. The default `colorScheme` fallback in `page.emulatedMedia()` changed from `'light'` to `'no-override'`, so the browser's actual system color scheme is preserved instead of being overridden on every page init.
+
+## 1.59.3
+
+- Fix missing runtime dependencies for `lockfile.js`: add `graceful-fs`, `retry`, and `signal-exit` to package.json dependencies
+- Fixes "Cannot find module 'graceful-fs'" error on clean `npx playwriter` installs (GitHub #45)
+
+## 1.59.2
+
+- Add `context.getExistingCDPSession(page)` API that reuses Playwright's internal CDP session instead of creating a new one via `Target.attachToTarget`
+- New `CDPSession.fromExistingSession()` static factory and `CDPSessionBorrowed` subclass for wrapping existing CRSessions without ownership
+- Borrowed sessions have no-op `detach()` since Playwright's page lifecycle owns the underlying session
+- Critical for relay/proxy environments (like playwriter) where `Target.attachToTarget` is intercepted and cannot create real new sessions
+- Added protocol schema, channel types, dispatcher, and client-side method
+- Added public TypeScript types with JSDoc documentation
+
+## 1.59.1
+
+- Expose `page.targetId()` and `page.sessionId()` for CDP connections (Chromium)
+- Expose `frame.frameId()` for all frames
+- These IDs are passed through the dispatcher/protocol layer from server to client
+- `targetId` and `sessionId` return `undefined` for non-Chromium browsers
+
+## 1.59.0-next
+
+- Initial fork with externalized dependencies for fast local builds

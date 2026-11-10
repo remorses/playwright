@@ -1,10 +1,10 @@
 {
-  "name": "playwright-core",
-  "version": "1.64.1",
+  "name": "@xmorse/playwright-core",
+  "version": "1.64.0",
   "description": "A high-level API to automate web browsers",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/microsoft/playwright.git"
+    "url": "git+https://github.com/remorses/playwright.git"
   },
   "homepage": "https://playwright.dev",
   "engines": {
@@ -14,6 +14,44 @@
     "name": "Microsoft Corporation"
   },
   "license": "Apache-2.0",
+  "scripts": {
+    "prepublishOnly": "node ./build.mjs"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "bytes": "3.1.2",
+    "chokidar": "4.0.3",
+    "colors": "1.4.0",
+    "commander": "15.0.0",
+    "debug": "4.4.3",
+    "diff": "9.0.0",
+    "dotenv": "17.4.2",
+    "enquirer": "2.4.1",
+    "esbuild": "0.28.1",
+    "get-east-asian-width": "1.6.0",
+    "get-stream": "9.0.1",
+    "graceful-fs": "4.2.11",
+    "https-proxy-agent": "9.1.0",
+    "ini": "7.0.0",
+    "jpeg-js": "0.4.4",
+    "json5": "2.2.3",
+    "mime": "4.1.0",
+    "minimatch": "10.2.5",
+    "open": "11.0.0",
+    "pngjs": "7.0.0",
+    "progress": "2.0.3",
+    "proxy-from-env": "2.1.0",
+    "retry": "0.13.1",
+    "signal-exit": "4.1.0",
+    "socks-proxy-agent": "10.1.0",
+    "source-map-support": "0.5.21",
+    "ws": "8.21.0",
+    "yaml": "2.9.0",
+    "yauzl": "3.4.0",
+    "yazl": "3.3.1",
+    "zod": "4.4.3",
+    "zod-to-json-schema": "3.25.2"
+  },
   "exports": {
     ".": {
       "types": "./index.d.ts",
