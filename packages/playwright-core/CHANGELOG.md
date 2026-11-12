@@ -1,5 +1,12 @@
 # @xmorse/playwright-core
 
+## 1.64.0
+
+1. **Based on Playwright 1.64.1** — the same version as `@playwriter/patchright-core`. All fork APIs keep working: `page.targetId()`, `page.sessionId()`, `frame.frameId()`, `context.getExistingCDPSession()`, `page.onMouseAction`, `locator.selector()`, `browserType.runWithAbortSignal()` and actionability reasons in timeout errors.
+2. **Recorder uses the new Playwright recording API** — `recorderEvent` carries the page alias and frame path, and actions are reported live, so a click comes before the popup it opens.
+3. **Real double clicks** — `locator.dblclick()` and `page.mouse.dblclick()` now send a real double click. Before, the fork sent one single click.
+4. **Existing web workers appear after reconnecting** — a new CDP client on a page now sees workers that were already running.
+
 ## 1.59.15
 
 1. **New `browserType.runWithAbortSignal(signal, callback)`** — cancel every Playwright call a block of code makes when a signal aborts:
